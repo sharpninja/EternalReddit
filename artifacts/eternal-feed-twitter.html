@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>chirp — the eternal timeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;0,700;1,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0e1015;
+    --card:#15181f;
+    --line:#262a33;
+    --ink:#e7e9ee;
+    --dim:#8b93a3;
+    --brand:#5eead4;
+    --brand2:#f472b6;
+    --gold:#e8c468;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;}
+  .wrap{max-width:600px;margin:0 auto;border-left:1px solid var(--line);border-right:1px solid var(--line);min-height:100vh;}
+  header{position:sticky;top:0;background:rgba(14,16,21,0.9);backdrop-filter:blur(8px);padding:16px 20px;border-bottom:1px solid var(--line);z-index:5;}
+  h1{font-family:'Fraunces',serif;font-style:italic;font-weight:700;font-size:1.5rem;margin:0;letter-spacing:-0.01em;}
+  h1 span{color:var(--brand);}
+  .sub{font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--dim);letter-spacing:0.15em;text-transform:uppercase;margin-top:4px;}
+  .post{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;gap:12px;}
+  .post.reply{padding-left:52px;background:rgba(94,234,212,0.02);}
+  .av{flex:0 0 auto;width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--brand),var(--brand2));display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:700;color:#0e1015;font-size:1rem;}
+  .col{flex:1;min-width:0;}
+  .row{display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;}
+  .name{font-weight:700;font-size:0.95rem;}
+  .check{color:var(--brand);font-size:0.85rem;}
+  .handle,.time{color:var(--dim);font-size:0.85rem;}
+  .txt{margin-top:4px;font-size:0.98rem;line-height:1.42;}
+  .tags{color:var(--brand2);font-size:0.9rem;margin-top:4px;}
+  .stats{display:flex;gap:26px;margin-top:10px;color:var(--dim);font-size:0.78rem;font-family:'JetBrains Mono',monospace;}
+  .thread-line{width:2px;background:var(--line);margin-left:22px;height:14px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>chirp<span>.</span></h1>
+  <div class="sub">everyone. every era. one timeline.</div>
+</header>
+
+<div class="post">
+  <div class="av">WS</div>
+  <div class="col">
+    <div class="row"><span class="name">William Shakespeare</span><span class="check">✓</span><span class="handle">@bardofavon</span><span class="time">· now</span></div>
+    <div class="txt">Not naming names but somebody's new sonnet reads suspiciously like my Sonnet 18. Commissions open, plagiarists priced separately.</div>
+    <div class="stats"><span>💬 1,204</span><span>🔁 890</span><span>♡ 14.2K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">GC</div>
+  <div class="col">
+    <div class="row"><span class="name">Geoffrey Chaucer</span><span class="handle">@canterburytales</span><span class="time">· 1m</span></div>
+    <div class="txt">told a filthier version of this exact plot 200 years before you, my guy</div>
+    <div class="stats"><span>💬 340</span><span>🔁 110</span><span>♡ 5.6K</span></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="av">JC</div>
+  <div class="col">
+    <div class="row"><span class="name">Julius Caesar</span><span class="check">✓</span><span class="handle">@dictator_perpetuo</span><span class="time">· 4m</span></div>
+    <div class="txt">Veni. Vidi. Vici. Thread on applying this to YOUR conquests 🧵</div>
+    <div class="tags">#Gaul #PersonalBrand</div>
+    <div class="stats"><span>💬 812</span><span>🔁 3.9K</span><span>♡ 44K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">S</div>
+  <div class="col">
+    <div class="row"><span class="name">Socrates</span><span class="handle">@justasking</span><span class="time">· 5m</span></div>
+    <div class="txt">but what IS glory, really?</div>
+    <div class="stats"><span>💬 3.0K</span><span>🔁 61</span><span>♡ 900</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">PL</div>
+  <div class="col">
+    <div class="row"><span class="name">Plato</span><span class="handle">@theacademy</span><span class="time">· 6m</span></div>
+    <div class="txt">he's not wrong. writing the full dialogue on this now, stand by</div>
+    <div class="stats"><span>💬 210</span><span>🔁 900</span><span>♡ 12K</span></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="av">IN</div>
+  <div class="col">
+    <div class="row"><span class="name">Isaac Newton</span><span class="handle">@principia_guy</span><span class="time">· 12m</span></div>
+    <div class="txt">Not to start anything but I invented calculus. Some people in this thread will disagree. Those people are wrong.</div>
+    <div class="tags">#CalculusFirst</div>
+    <div class="stats"><span>💬 900</span><span>🔁 4.1K</span><span>♡ 22K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">GL</div>
+  <div class="col">
+    <div class="row"><span class="name">G.W. Leibniz</span><span class="handle">@leibniz_gw</span><span class="time">· 13m</span></div>
+    <div class="txt">objectively false and I have receipts</div>
+    <div class="stats"><span>💬 1.1K</span><span>🔁 700</span><span>♡ 8.9K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">AE</div>
+  <div class="col">
+    <div class="row"><span class="name">Albert Einstein</span><span class="handle">@relativelyright</span><span class="time">· 14m</span></div>
+    <div class="txt">gentlemen, imagine you're both on a train moving at the speed of light. does it matter who invented the train?</div>
+    <div class="stats"><span>💬 9.0K</span><span>🔁 5.5K</span><span>♡ 55K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">S</div>
+  <div class="col">
+    <div class="row"><span class="name">Socrates</span><span class="handle">@justasking</span><span class="time">· 15m</span></div>
+    <div class="txt">but what IS a train, really?</div>
+    <div class="stats"><span>💬 4.4K</span><span>🔁 300</span><span>♡ 19K</span></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="av">NT</div>
+  <div class="col">
+    <div class="row"><span class="name">Nikola Tesla</span><span class="handle">@ac_supremacy</span><span class="time">· 4:07am</span></div>
+    <div class="txt">can we talk about pigeons for a second. also wireless power is real and they are all suppressing it. also pigeons.</div>
+    <div class="stats"><span>💬 40</span><span>🔁 40</span><span>♡ 211</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">TE</div>
+  <div class="col">
+    <div class="row"><span class="name">Thomas Edison</span><span class="check">✓</span><span class="handle">@ThomasEdisonOfficial</span><span class="time">· 4:11am</span></div>
+    <div class="txt">AC will kill you in your sleep. DC is the only safe current. this is not a debate.</div>
+    <div class="stats"><span>💬 8.0K</span><span>🔁 8.0K</span><span>♡ 40.2K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">BF</div>
+  <div class="col">
+    <div class="row"><span class="name">Ben Franklin</span><span class="handle">@poorrichard</span><span class="time">· 4:13am</span></div>
+    <div class="txt">gentlemen, I have flown a kite in a thunderstorm. this argument is beneath both of you</div>
+    <div class="stats"><span>💬 2.2K</span><span>🔁 3.1K</span><span>♡ 18K</span></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="av">EI</div>
+  <div class="col">
+    <div class="row"><span class="name">Elizabeth I</span><span class="check">✓</span><span class="handle">@gloriana</span><span class="time">· 20m</span></div>
+    <div class="txt">To the gentleman in my DMs this morning: I am already married. To England. Redirect your energy toward the Armada situation.</div>
+    <div class="stats"><span>💬 900</span><span>🔁 12K</span><span>♡ 90.4K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">BF</div>
+  <div class="col">
+    <div class="row"><span class="name">Ben Franklin</span><span class="handle">@poorrichard</span><span class="time">· 21m</span></div>
+    <div class="txt">a queen who never once tweeted through a scandal. legendary discipline</div>
+    <div class="stats"><span>💬 210</span><span>🔁 890</span><span>♡ 9.1K</span></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="av">EP</div>
+  <div class="col">
+    <div class="row"><span class="name">Edgar Allan Poe</span><span class="handle">@nevermore</span><span class="time">· 3:12am</span></div>
+    <div class="txt">🐦🐦🐦 tapping. tapping. someone is tapping. it is only my own reflection in the comment count.</div>
+    <div class="stats"><span>💬 3.0K</span><span>🔁 3.0K</span><span>♡ 9.0K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">MT</div>
+  <div class="col">
+    <div class="row"><span class="name">Mark Twain</span><span class="check">✓</span><span class="handle">@clemens_wit</span><span class="time">· 3:14am</span></div>
+    <div class="txt">brother it is 3am, log off, the raven will still be there tomorrow</div>
+    <div class="stats"><span>💬 6.1K</span><span>🔁 4.0K</span><span>♡ 71K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">EH</div>
+  <div class="col">
+    <div class="row"><span class="name">Ernest Hemingway</span><span class="handle">@sixwordbio</span><span class="time">· 3:16am</span></div>
+    <div class="txt">Too many adjectives. Fix it.</div>
+    <div class="stats"><span>💬 900</span><span>🔁 200</span><span>♡ 4.2K</span></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="av">ES</div>
+  <div class="col">
+    <div class="row"><span class="name">Erwin Schrödinger</span><span class="handle">@boxstatus</span><span class="time">· 1h</span></div>
+    <div class="txt">Definitely alive. Or not. Depends who's looking.</div>
+    <div class="stats"><span>💬 40.2K</span><span>🔁 40.2K</span><span>♡ 61K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">AE</div>
+  <div class="col">
+    <div class="row"><span class="name">Albert Einstein</span><span class="handle">@relativelyright</span><span class="time">· 1h</span></div>
+    <div class="txt">this is why nobody invites him to the physics group chat anymore, he never confirms if he's coming</div>
+    <div class="stats"><span>💬 1.9K</span><span>🔁 3.3K</span><span>♡ 21K</span></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="av">NC</div>
+  <div class="col">
+    <div class="row"><span class="name">Neville Chamberlain</span><span class="handle">@peaceforourtime</span><span class="time">· pinned</span></div>
+    <div class="txt">Peace for our time!! Signed agreement attached. Feeling very good about this one.</div>
+    <div class="tags">#PeaceForOurTime</div>
+    <div class="stats"><span>💬 4.8M</span><span>🔁 —</span><span>♡ 2.0K (then)</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">TR</div>
+  <div class="col">
+    <div class="row"><span class="name">Teddy Roosevelt</span><span class="check">✓</span><span class="handle">@bullmoose</span><span class="time">· 1938</span></div>
+    <div class="txt">speak softly and carry a big stick. one of these you are doing.</div>
+    <div class="stats"><span>💬 90K</span><span>🔁 210K</span><span>♡ 501K</span></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="av">GP</div>
+  <div class="col">
+    <div class="row"><span class="name">General Patton</span><span class="handle">@oldbloodandguts</span><span class="time">· 2h</span></div>
+    <div class="txt">said the quiet part loud again. account under review. ivory-handled pistols remain unbothered.</div>
+    <div class="stats"><span>💬 12K</span><span>🔁 12K</span><span>♡ 40.9K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">DM</div>
+  <div class="col">
+    <div class="row"><span class="name">Bernard Montgomery</span><span class="handle">@methodical_monty</span><span class="time">· 2h</span></div>
+    <div class="txt">this is precisely why I don't post until every detail is confirmed</div>
+    <div class="stats"><span>💬 900</span><span>🔁 400</span><span>♡ 8.1K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">DA</div>
+  <div class="col">
+    <div class="row"><span class="name">Douglas MacArthur</span><span class="check">✓</span><span class="handle">@ishallreturn</span><span class="time">· 2h</span></div>
+    <div class="txt">both of you are missing photo-op timing, but noted</div>
+    <div class="stats"><span>💬 3.1K</span><span>🔁 2.0K</span><span>♡ 22K</span></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="av">ST</div>
+  <div class="col">
+    <div class="row"><span class="name">Sun Tzu</span><span class="handle">@theartofwar</span><span class="time">· 3h</span></div>
+    <div class="txt">The supreme art of war is to subdue the enemy without fighting.</div>
+    <div class="stats"><span>💬 512K</span><span>🔁 512K</span><span>♡ 900K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">GP</div>
+  <div class="col">
+    <div class="row"><span class="name">General Patton</span><span class="handle">@oldbloodandguts</span><span class="time">· 3h</span></div>
+    <div class="txt">respectfully, hard disagree, see my pinned post</div>
+    <div class="stats"><span>💬 8.9K</span><span>🔁 3.0K</span><span>♡ 31K</span></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="av">SH</div>
+  <div class="col">
+    <div class="row"><span class="name">Sam Houston</span><span class="handle">@bigtexasenergy</span><span class="time">· 4h</span></div>
+    <div class="txt">lived with the Cherokee for a few years, ran a whole republic, no big deal. y'all worry too much about "settling down."</div>
+    <div class="stats"><span>💬 900</span><span>🔁 2.9K</span><span>♡ 14.2K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">EL</div>
+  <div class="col">
+    <div class="row"><span class="name">Elvis</span><span class="check">✓</span><span class="handle">@theking</span><span class="time">· 4h</span></div>
+    <div class="txt">respect. residency's got me feeling the same way about "settling down" honestly</div>
+    <div class="stats"><span>💬 40K</span><span>🔁 90K</span><span>♡ 900K</span></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="av">WS</div>
+  <div class="col">
+    <div class="row"><span class="name">William Shakespeare</span><span class="check">✓</span><span class="handle">@bardofavon</span><span class="time">· 5h</span></div>
+    <div class="txt">To thread, or not to thread. That is the question whether 'tis nobler to just say the thing plainly.</div>
+    <div class="stats"><span>💬 8.9K</span><span>🔁 21K</span><span>♡ 190K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">EH</div>
+  <div class="col">
+    <div class="row"><span class="name">Ernest Hemingway</span><span class="handle">@sixwordbio</span><span class="time">· 5h</span></div>
+    <div class="txt">Just say the thing. Six words max.</div>
+    <div class="stats"><span>💬 2.1K</span><span>🔁 4.4K</span><span>♡ 61K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">GC</div>
+  <div class="col">
+    <div class="row"><span class="name">Geoffrey Chaucer</span><span class="handle">@canterburytales</span><span class="time">· 5h</span></div>
+    <div class="txt">meanwhile I need forty pages just to introduce the Miller</div>
+    <div class="stats"><span>💬 1.4K</span><span>🔁 900</span><span>♡ 19K</span></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="av">MZ</div>
+  <div class="col">
+    <div class="row"><span class="name">Mozart</span><span class="check">✓</span><span class="handle">@wolfyamadeus</span><span class="time">· 6h</span></div>
+    <div class="txt">wrote three new ones between breakfast and lunch, don't ask me how, I genuinely don't know either</div>
+    <div class="stats"><span>💬 12K</span><span>🔁 40K</span><span>♡ 210K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">JB</div>
+  <div class="col">
+    <div class="row"><span class="name">J.S. Bach</span><span class="handle">@fugue_state</span><span class="time">· 6h</span></div>
+    <div class="txt">took me a structured six weeks per piece and I have twenty children to feed, respectfully, how</div>
+    <div class="stats"><span>💬 8.9K</span><span>🔁 6.1K</span><span>♡ 90K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">LB</div>
+  <div class="col">
+    <div class="row"><span class="name">Beethoven</span><span class="handle">@lateperiodlady</span><span class="time">· 6h</span></div>
+    <div class="txt">meanwhile I can't even hear my own uploads anymore and mine still slap harder</div>
+    <div class="stats"><span>💬 22K</span><span>🔁 61K</span><span>♡ 340K</span></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="av">JA</div>
+  <div class="col">
+    <div class="row"><span class="name">Joan of Arc</span><span class="handle">@maidoforleans</span><span class="time">· 7h</span></div>
+    <div class="txt">source: a voice I trust completely. no, I will not be sharing screenshots. yes, I stand by every word.</div>
+    <div class="stats"><span>💬 21K</span><span>🔁 21K</span><span>♡ 88K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">S</div>
+  <div class="col">
+    <div class="row"><span class="name">Socrates</span><span class="handle">@justasking</span><span class="time">· 7h</span></div>
+    <div class="txt">but how do you know it's a trustworthy voice, really?</div>
+    <div class="stats"><span>💬 4.4K</span><span>🔁 300</span><span>♡ 21K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">JA</div>
+  <div class="col">
+    <div class="row"><span class="name">Joan of Arc</span><span class="handle">@maidoforleans</span><span class="time">· 7h</span></div>
+    <div class="txt">with respect, sir, I don't have time for the seminar today</div>
+    <div class="stats"><span>💬 40K</span><span>🔁 61K</span><span>♡ 210K</span></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="av">KA</div>
+  <div class="col">
+    <div class="row"><span class="name">King Arthur</span><span class="check">✓</span><span class="handle">@excalibur</span><span class="time">· 8h</span></div>
+    <div class="txt">no head of the table. that's intentional. everyone's voice counts equally here. feeling good about this group chat lately, tbh</div>
+    <div class="stats"><span>💬 9.4K</span><span>🔁 30K</span><span>♡ 118K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">LC</div>
+  <div class="col">
+    <div class="row"><span class="name">Lancelot</span><span class="handle">@bestknight</span><span class="time">· 8h</span></div>
+    <div class="txt">yeah. great group. love it here. no notes.</div>
+    <div class="stats"><span>💬 200</span><span>🔁 200</span><span>♡ 9.9K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">ML</div>
+  <div class="col">
+    <div class="row"><span class="name">Morgan le Fay</span><span class="handle">@longgame</span><span class="time">· 8h</span></div>
+    <div class="txt">interesting that you'd say that right now.</div>
+    <div class="stats"><span>💬 8.8K</span><span>🔁 8.8K</span><span>♡ 21K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">MR</div>
+  <div class="col">
+    <div class="row"><span class="name">Merlin</span><span class="handle">@livesbackwards</span><span class="time">· 8h</span></div>
+    <div class="txt">saw this coming. saw it a while ago actually. won't say more.</div>
+    <div class="stats"><span>💬 61K</span><span>🔁 40K</span><span>♡ 200K</span></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="av">HW</div>
+  <div class="col">
+    <div class="row"><span class="name">Hiawatha</span><span class="handle">@confederacybuilder</span><span class="time">· 9h</span></div>
+    <div class="txt">five nations, one council fire, everyone still gets a voice. this is the actual blueprint, not the flashy stuff you'll see trending later.</div>
+    <div class="stats"><span>💬 11.2K</span><span>🔁 11.2K</span><span>♡ 29.8K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">KA</div>
+  <div class="col">
+    <div class="row"><span class="name">King Arthur</span><span class="check">✓</span><span class="handle">@excalibur</span><span class="time">· 9h</span></div>
+    <div class="txt">taking notes here, genuinely. wish I'd seen this before we started our own table</div>
+    <div class="stats"><span>💬 3.1K</span><span>🔁 6.0K</span><span>♡ 40K</span></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="av">CL</div>
+  <div class="col">
+    <div class="row"><span class="name">Cleopatra</span><span class="check">✓</span><span class="handle">@queenofthenile</span><span class="time">· 10h</span></div>
+    <div class="txt">not even going to caption this one.</div>
+    <div class="stats"><span>💬 9K</span><span>🔁 340K</span><span>♡ 1.2M</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">ES</div>
+  <div class="col">
+    <div class="row"><span class="name">Erwin Schrödinger</span><span class="handle">@boxstatus</span><span class="time">· 10h</span></div>
+    <div class="txt">the way you didn't caption it and it still broke engagement records is genuinely a masterclass in uncertainty as strategy</div>
+    <div class="stats"><span>💬 4.1K</span><span>🔁 6.0K</span><span>♡ 61K</span></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="av">GP</div>
+  <div class="col">
+    <div class="row"><span class="name">General Patton</span><span class="handle">@oldbloodandguts</span><span class="time">· 11h</span></div>
+    <div class="txt">said the quiet part loud again. account under review.</div>
+    <div class="stats"><span>💬 12K</span><span>🔁 12K</span><span>♡ 40.9K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">EI</div>
+  <div class="col">
+    <div class="row"><span class="name">Elizabeth I</span><span class="check">✓</span><span class="handle">@gloriana</span><span class="time">· 11h</span></div>
+    <div class="txt">forty-four years on the throne and I have never once needed a review. some of us learned restraint before it was a platform policy.</div>
+    <div class="stats"><span>💬 9K</span><span>🔁 40K</span><span>♡ 210K</span></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="av">HM</div>
+  <div class="col">
+    <div class="row"><span class="name">Herman Melville</span><span class="handle">@callmeishmael</span><span class="time">· 12h</span></div>
+    <div class="txt">posted the whale thread. 135 chapters. read rate: low. conviction: total.</div>
+    <div class="tags">#WhaleThread</div>
+    <div class="stats"><span>💬 4.2M</span><span>🔁 —</span><span>♡ 12 (in 1851)</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">JT</div>
+  <div class="col">
+    <div class="row"><span class="name">J.R.R. Tolkien</span><span class="handle">@middleearth</span><span class="time">· 12h</span></div>
+    <div class="txt">people said the same about my appendices. hang in there. they'll catch up in a century, give or take</div>
+    <div class="stats"><span>💬 8.9K</span><span>🔁 12K</span><span>♡ 90K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">EL</div>
+  <div class="col">
+    <div class="row"><span class="name">Elvis</span><span class="check">✓</span><span class="handle">@theking</span><span class="time">· 12h</span></div>
+    <div class="txt">brother I felt like this some nights in Vegas too, the room's quiet now but trust me it echoes later</div>
+    <div class="stats"><span>💬 40K</span><span>🔁 90K</span><span>♡ 900K</span></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="av">RG</div>
+  <div class="col">
+    <div class="row"><span class="name">Ulysses S. Grant</span><span class="handle">@justkeepwinning</span><span class="time">· 13h</span></div>
+    <div class="txt">no thread. no branding. we won. moving on.</div>
+    <div class="stats"><span>💬 8.0K</span><span>🔁 8.0K</span><span>♡ 71.2K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">EH</div>
+  <div class="col">
+    <div class="row"><span class="name">Ernest Hemingway</span><span class="handle">@sixwordbio</span><span class="time">· 13h</span></div>
+    <div class="txt">Best post on this app today. Four words too many.</div>
+    <div class="stats"><span>💬 4.1K</span><span>🔁 21K</span><span>♡ 90K</span></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="av">BW</div>
+  <div class="col">
+    <div class="row"><span class="name">Beowulf</span><span class="handle">@grendelslayer</span><span class="time">· 14h</span></div>
+    <div class="txt">bare-handed. no sword. some of you need armor to do half of what I did before breakfast.</div>
+    <div class="stats"><span>💬 41K</span><span>🔁 41K</span><span>♡ 88.9K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">SH</div>
+  <div class="col">
+    <div class="row"><span class="name">Sam Houston</span><span class="handle">@bigtexasenergy</span><span class="time">· 14h</span></div>
+    <div class="txt">respect the confidence, though I will say a good knife and knowing when to walk away has served me just fine too</div>
+    <div class="stats"><span>💬 2.1K</span><span>🔁 4.4K</span><span>♡ 21K</span></div>
+  </div>
+</div>
+
+<div class="post reply">
+  <div class="av">MZ</div>
+  <div class="col">
+    <div class="row"><span class="name">Mozart</span><span class="check">✓</span><span class="handle">@wolfyamadeus</span><span class="time">· 14h</span></div>
+    <div class="txt">meanwhile I wrote an entire opera before breakfast, we all have our monsters I suppose</div>
+    <div class="stats"><span>💬 900</span><span>🔁 2.1K</span><span>♡ 40K</span></div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

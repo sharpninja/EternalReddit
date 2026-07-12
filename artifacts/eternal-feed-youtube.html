@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PastTube</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;1,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0f0f10;
+    --card:#181819;
+    --line:#2a2a2c;
+    --ink:#f1f1f1;
+    --dim:#a3a3a5;
+    --red:#e8453c;
+    --gold:#e8c468;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;}
+  .wrap{max-width:720px;margin:0 auto;padding-bottom:60px;}
+  header{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;}
+  .logo{font-family:'Fraunces',serif;font-weight:700;font-size:1.4rem;}
+  .logo span{color:var(--red);}
+  .video{border-bottom:1px solid var(--line);padding:18px 20px;}
+  .thumb{
+    width:100%;aspect-ratio:16/9;border-radius:10px;
+    background:linear-gradient(135deg, var(--card), #232326);
+    display:flex;align-items:center;justify-content:center;
+    position:relative;overflow:hidden;margin-bottom:12px;
+    border:1px solid var(--line);
+  }
+  .thumb .play{font-size:2.2rem;color:var(--dim);opacity:0.5;}
+  .thumb .dur{
+    position:absolute;bottom:8px;right:8px;
+    background:rgba(0,0,0,0.8);padding:2px 6px;border-radius:4px;
+    font-family:'JetBrains Mono',monospace;font-size:0.72rem;
+  }
+  .thumb .label{
+    position:absolute; top:10px; left:10px;
+    font-family:'Fraunces',serif; font-weight:700; font-style:italic;
+    font-size:0.95rem; color:var(--dim); opacity:0.55; max-width:85%;
+  }
+  .meta{display:flex;gap:12px;}
+  .av{flex:0 0 auto;width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--red));display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:700;color:#0f0f10;font-size:0.85rem;}
+  .info{flex:1;min-width:0;}
+  .title{font-weight:700;font-size:1.02rem;line-height:1.3;margin-bottom:4px;}
+  .chan{color:var(--dim);font-size:0.85rem;display:flex;gap:4px;align-items:center;}
+  .check{color:var(--gold);}
+  .stats{color:var(--dim);font-size:0.82rem;margin-top:2px;font-family:'JetBrains Mono',monospace;}
+  .comments{margin-top:14px;padding-left:50px;border-left:1px dashed var(--line);}
+  .comment{display:flex;gap:10px;margin-bottom:12px;}
+  .cav{flex:0 0 auto;width:28px;height:28px;border-radius:50%;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:700;font-size:0.68rem;}
+  .ctext{font-size:0.88rem;line-height:1.4;}
+  .cname{font-weight:600;font-size:0.82rem;color:var(--dim);}
+  .clikes{font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:var(--dim);margin-top:3px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="logo">Past<span>Tube</span></div>
+</header>
+
+<div class="video">
+  <div class="thumb"><span class="label">"On the Method of Fluxions" — full lecture</span><span class="play">▶</span><span class="dur">58:12</span></div>
+  <div class="meta">
+    <div class="av">JB</div>
+    <div class="info">
+      <div class="title">Fugue in D Minor — Full Structure Breakdown (Ep. 214)</div>
+      <div class="chan">J.S. Bach — Fugue State <span class="check">✓</span></div>
+      <div class="stats">1.8M views · uploaded on schedule, as always</div>
+    </div>
+  </div>
+  <div class="comments">
+    <div class="comment"><div class="cav">LB</div><div><div class="cname">Beethoven</div><div class="ctext">did this in a fraction of the time, comments off on my version though, don't ask</div><div class="clikes">👍 6.1K</div></div></div>
+    <div class="comment"><div class="cav">WM</div><div><div class="cname">Mozart</div><div class="ctext">respect the discipline but I upload daily and mine takes 30 seconds to make, no shade</div><div class="clikes">👍 40K</div></div></div>
+  </div>
+</div>
+
+<div class="video">
+  <div class="thumb"><span class="label">late-period upload, unlisted then found</span><span class="play">▶</span><span class="dur">1:12:40</span></div>
+  <div class="meta">
+    <div class="av">LB</div>
+    <div class="info">
+      <div class="title">Symphony No. 9 — I turned the comments off, this one's just for me</div>
+      <div class="chan">Ludwig van Beethoven</div>
+      <div class="stats">deaf era uploads · fans insist this is the best run · comments disabled</div>
+    </div>
+  </div>
+  <div class="comments">
+    <div class="comment"><div class="cav">JB</div><div><div class="cname">Bach</div><div class="ctext">comments off but I'm still watching. this might genuinely be the best thing on the platform right now</div><div class="clikes">👍 90K</div></div></div>
+  </div>
+</div>
+
+<div class="video">
+  <div class="thumb"><span class="label">flight test #14, still doesn't fly</span><span class="play">▶</span><span class="dur">22:03</span></div>
+  <div class="meta">
+    <div class="av">DV</div>
+    <div class="info">
+      <div class="title">I Finally Finished the Flying Machine (mostly to prove a point to Michelangelo)</div>
+      <div class="chan">Leonardo da Vinci — coming soon (again)</div>
+      <div class="stats">330K views · "coming soon" series, ep. 14 of an unknown total</div>
+    </div>
+  </div>
+  <div class="comments">
+    <div class="comment"><div class="cav">MA</div><div><div class="cname">Michelangelo</div><div class="ctext">it does not fly, Leonardo. it does not fly.</div><div class="clikes">👍 61K</div></div></div>
+    <div class="comment"><div class="cav">BF</div><div><div class="cname">Ben Franklin</div><div class="ctext">the kite flew though. just saying. no notes needed here.</div><div class="clikes">👍 9.4K</div></div></div>
+  </div>
+</div>
+
+<div class="video">
+  <div class="thumb"><span class="label">135 parts, uploaded weekly, nobody watched</span><span class="play">▶</span><span class="dur">series · 135 pts</span></div>
+  <div class="meta">
+    <div class="av">HM</div>
+    <div class="info">
+      <div class="title">The Whale — Full Series (1851 upload, rediscovered 1920s)</div>
+      <div class="chan">Herman Melville — Call Me Ishmael</div>
+      <div class="stats">12 views (1851) → 4.2M views (now) · "required viewing" — a century late</div>
+    </div>
+  </div>
+  <div class="comments">
+    <div class="comment"><div class="cav">EH</div><div><div class="cname">Hemingway</div><div class="ctext">135 parts. I could've done it in six words. still, respect the commitment.</div><div class="clikes">👍 12K</div></div></div>
+  </div>
+</div>
+
+<div class="video">
+  <div class="thumb"><span class="label">lorebuilding stream, hour 6 of the appendices</span><span class="play">▶</span><span class="dur">6:41:00</span></div>
+  <div class="meta">
+    <div class="av">JT</div>
+    <div class="info">
+      <div class="title">Middle-earth Worldbuilding — The Appendices Are the Best Part, Fight Me</div>
+      <div class="chan">J.R.R. Tolkien</div>
+      <div class="stats">320K views · uploads once every several years, fans riot every time</div>
+    </div>
+  </div>
+  <div class="comments">
+    <div class="comment"><div class="cav">GC</div><div><div class="cname">Chaucer</div><div class="ctext">I told my whole story in one trip. you're on hour six of footnotes. respect either way</div><div class="clikes">👍 8.8K</div></div></div>
+    <div class="comment"><div class="cav">HM</div><div><div class="cname">Melville</div><div class="ctext">ahead of your time, they'll get it eventually, trust me on the timeline</div><div class="clikes">👍 40K</div></div></div>
+  </div>
+</div>
+
+<div class="video">
+  <div class="thumb"><span class="label">prophecy stream, timestamps make no sense</span><span class="play">▶</span><span class="dur">??:??:??</span></div>
+  <div class="meta">
+    <div class="av">MR</div>
+    <div class="info">
+      <div class="title">strange feeling today. can't explain why. will make sense to you eventually.</div>
+      <div class="chan">Merlin — lives backwards</div>
+      <div class="stats">2.2M views · upload schedule: unknowable</div>
+    </div>
+  </div>
+  <div class="comments">
+    <div class="comment"><div class="cav">KA</div><div><div class="cname">King Arthur</div><div class="ctext">brother please just tell me directly for once</div><div class="clikes">👍 61K</div></div></div>
+    <div class="comment"><div class="cav">ML</div><div><div class="cname">Morgan le Fay</div><div class="ctext">he already did. you weren't listening.</div><div class="clikes">👍 90K</div></div></div>
+  </div>
+</div>
+
+<div class="video">
+  <div class="thumb"><span class="label">group vlog, tension in the edit</span><span class="play">▶</span><span class="dur">44:12</span></div>
+  <div class="meta">
+    <div class="av">KA</div>
+    <div class="info">
+      <div class="title">Round Table Vlog #61 — no head of the table, very intentional, we're fine</div>
+      <div class="chan">King Arthur — Camelot Diaries <span class="check">✓</span></div>
+      <div class="stats">118K views · "we're fine" pinned comment doing a lot of work</div>
+    </div>
+  </div>
+  <div class="comments">
+    <div class="comment"><div class="cav">LC</div><div><div class="cname">Lancelot</div><div class="ctext">great group. love it here. no notes.</div><div class="clikes">👍 9.9K</div></div></div>
+    <div class="comment"><div class="cav">ML</div><div><div class="cname">Morgan le Fay</div><div class="ctext">interesting that you'd say that right now.</div><div class="clikes">👍 21K</div></div></div>
+  </div>
+</div>
+
+<div class="video">
+  <div class="thumb"><span class="label">bare-handed, no sword, no edit</span><span class="play">▶</span><span class="dur">31:00</span></div>
+  <div class="meta">
+    <div class="av">BW</div>
+    <div class="info">
+      <div class="title">I Fought Grendel Bare-Handed (swords are for cowards, don't @ me)</div>
+      <div class="chan">Beowulf</div>
+      <div class="stats">88.9K views · sequel against Grendel's mother went semi-viral</div>
+    </div>
+  </div>
+  <div class="comments">
+    <div class="comment"><div class="cav">JA</div><div><div class="cname">Joan of Arc</div><div class="ctext">respect the conviction, mine came from a voice, not a grip strength</div><div class="clikes">👍 40K</div></div></div>
+  </div>
+</div>
+
+<div class="video">
+  <div class="thumb"><span class="label">Grendel fight, unedited reaction cam</span><span class="play">▶</span><span class="dur">14:55</span></div>
+  <div class="meta">
+    <div class="av">BW</div>
+    <div class="info">
+      <div class="title">Reacting to My Own Grendel Fight Footage (still can't believe I did this bare-handed)</div>
+      <div class="chan">Beowulf</div>
+      <div class="stats">210K views · sequel vs. Grendel's mother linked in description</div>
+    </div>
+  </div>
+  <div class="comments">
+    <div class="comment"><div class="cav">GP</div><div><div class="cname">General Patton</div><div class="ctext">this is the most honest combat footage on the platform, no PR spin, just results</div><div class="clikes">👍 40K</div></div></div>
+    <div class="comment"><div class="cav">S</div><div><div class="cname">Socrates</div><div class="ctext">but what does it mean to "win," really?</div><div class="clikes">👍 900</div></div></div>
+    <div class="comment"><div class="cav">BW</div><div><div class="cname">Beowulf</div><div class="ctext">it means Grendel's arm is on my wall, that's what it means</div><div class="clikes">👍 90K</div></div></div>
+  </div>
+</div>
+
+<div class="video">
+  <div class="thumb"><span class="label">daily upload streak, day 4,102</span><span class="play">▶</span><span class="dur">0:31</span></div>
+  <div class="meta">
+    <div class="av">WM</div>
+    <div class="info">
+      <div class="title">Wrote This During Breakfast, Don't Overthink It</div>
+      <div class="chan">Mozart — Wolfy Amadeus</div>
+      <div class="stats">210K views · daily upload streak, day 4,102</div>
+    </div>
+  </div>
+  <div class="comments">
+    <div class="comment"><div class="cav">JB</div><div><div class="cname">Bach</div><div class="ctext">I schedule six weeks per upload and this man does it over eggs. genuinely unwell about it</div><div class="clikes">👍 61K</div></div></div>
+    <div class="comment"><div class="cav">LB</div><div><div class="cname">Beethoven</div><div class="ctext">meanwhile I can't hear my own uploads and mine still slap harder, just saying</div><div class="clikes">👍 90K</div></div></div>
+  </div>
+</div>
+
+<div class="video">
+  <div class="thumb"><span class="label">battle-plan explainer, source undisclosed</span><span class="play">▶</span><span class="dur">18:02</span></div>
+  <div class="meta">
+    <div class="av">JA</div>
+    <div class="info">
+      <div class="title">How We Win at Orléans — Full Battle Plan (source: trust me)</div>
+      <div class="chan">Joan of Arc — Maid of Orléans</div>
+      <div class="stats">88K views · channel later suspended, reinstated centuries after</div>
+    </div>
+  </div>
+  <div class="comments">
+    <div class="comment"><div class="cav">ST</div><div><div class="cname">Sun Tzu</div><div class="ctext">unorthodox sourcing but the strategic instincts here are genuinely excellent</div><div class="clikes">👍 90K</div></div></div>
+    <div class="comment"><div class="cav">S</div><div><div class="cname">Socrates</div><div class="ctext">but how do you know it's a trustworthy source, really?</div><div class="clikes">👍 3.1K</div></div></div>
+  </div>
+</div>
+
+<div class="video">
+  <div class="thumb"><span class="label">unboxing: telephone prototype</span><span class="play">▶</span><span class="dur">9:40</span></div>
+  <div class="meta">
+    <div class="av">AGB</div>
+    <div class="info">
+      <div class="title">Unboxing the First Working Telephone (this changes everything)</div>
+      <div class="chan">Alexander Graham Bell <span class="check">✓</span></div>
+      <div class="stats">400K views · patent filed same day as another channel, allegedly</div>
+    </div>
+  </div>
+  <div class="comments">
+    <div class="comment"><div class="cav">EG</div><div><div class="cname">Elisha Gray</div><div class="ctext">love the production value, mine looked identical, just saying, timestamps don't lie</div><div class="clikes">👍 12K</div></div></div>
+    <div class="comment"><div class="cav">NT</div><div><div class="cname">Tesla</div><div class="ctext">wireless would've done this without wires at all but nobody funds my channel</div><div class="clikes">👍 40K</div></div></div>
+  </div>
+</div>
+
+<div class="video">
+  <div class="thumb"><span class="label">barge selfie compilation, gold everything</span><span class="play">▶</span><span class="dur">6:12</span></div>
+  <div class="meta">
+    <div class="av">CL</div>
+    <div class="info">
+      <div class="title">A Day in My Life as Pharaoh (not even going to caption this one)</div>
+      <div class="chan">Cleopatra VII <span class="check">✓</span></div>
+      <div class="stats">1.2M views · lighting department deserves a raise</div>
+    </div>
+  </div>
+  <div class="comments">
+    <div class="comment"><div class="cav">DV</div><div><div class="cname">Leonardo da Vinci</div><div class="ctext">the composition and lighting in this are honestly better than half my sketchbooks, professional respect</div><div class="clikes">👍 61K</div></div></div>
+    <div class="comment"><div class="cav">JC</div><div><div class="cname">Julius Caesar</div><div class="ctext">no notes. genuinely. rare for me to say that about anyone's content</div><div class="clikes">👍 90K</div></div></div>
+  </div>
+</div>
+
+<div class="video">
+  <div class="thumb"><span class="label">strategy explainer, no wasted motion</span><span class="play">▶</span><span class="dur">11:30</span></div>
+  <div class="meta">
+    <div class="av">ST</div>
+    <div class="info">
+      <div class="title">Win Without Fighting — The Full Framework</div>
+      <div class="chan">Sun Tzu — The Art of War</div>
+      <div class="stats">900K views · required viewing in half the military academies now</div>
+    </div>
+  </div>
+  <div class="comments">
+    <div class="comment"><div class="cav">EI</div><div><div class="cname">Elizabeth I</div><div class="ctext">this is essentially how I ran my entire court for forty-four years, never once had to raise my voice</div><div class="clikes">👍 40K</div></div></div>
+    <div class="comment"><div class="cav">GP</div><div><div class="cname">General Patton</div><div class="ctext">brilliant framework, personally I still prefer decisive conflict, but I understand the appeal</div><div class="clikes">👍 22K</div></div></div>
+  </div>
+</div>
+
+<div class="video">
+  <div class="thumb"><span class="label">telephone unboxing, patent drama in comments</span><span class="play">▶</span><span class="dur">9:40</span></div>
+  <div class="meta">
+    <div class="av">AGB</div>
+    <div class="info">
+      <div class="title">Unboxing the First Working Telephone (this changes everything)</div>
+      <div class="chan">Alexander Graham Bell <span class="check">✓</span></div>
+      <div class="stats">400K views · patent filed same day as another channel, allegedly</div>
+    </div>
+  </div>
+  <div class="comments">
+    <div class="comment"><div class="cav">S</div><div><div class="cname">Socrates</div><div class="ctext">but what IS a telephone call, really, if the other person can't see your face?</div><div class="clikes">👍 3.1K</div></div></div>
+    <div class="comment"><div class="cav">JA</div><div><div class="cname">Joan of Arc</div><div class="ctext">I've been receiving messages without a device for years, honestly this feels like a downgrade</div><div class="clikes">👍 61K</div></div></div>
+  </div>
+</div>
+
+<div class="video">
+  <div class="thumb"><span class="label">peace agreement, signed on camera</span><span class="play">▶</span><span class="dur">4:02</span></div>
+  <div class="meta">
+    <div class="av">NC</div>
+    <div class="info">
+      <div class="title">Peace For Our Time — Signing Ceremony (feeling good about this one)</div>
+      <div class="chan">Neville Chamberlain</div>
+      <div class="stats">2K views (then) · 4.8M views (now) · comments largely retrospective</div>
+    </div>
+  </div>
+  <div class="comments">
+    <div class="comment"><div class="cav">S</div><div><div class="cname">Socrates</div><div class="ctext">but what IS peace, really, if it isn't tested?</div><div class="clikes">👍 90K</div></div></div>
+    <div class="comment"><div class="cav">JA</div><div><div class="cname">Joan of Arc</div><div class="ctext">respectfully, sir, a voice told me this wouldn't hold, and I don't say that to be cruel</div><div class="clikes">👍 210K</div></div></div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

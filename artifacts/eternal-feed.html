@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE ETERNAL FEED</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#171310;
+    --ink2:#221c17;
+    --parch:#e9dfc6;
+    --parch-dim:#d8cba8;
+    --wax:#8a2a2a;
+    --wax-bright:#b3382f;
+    --gold:#b5892b;
+    --gold-bright:#d4af37;
+    --line: rgba(181,137,43,0.35);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse at top, #2a2119 0%, var(--ink) 55%);
+    color:var(--parch);
+    font-family:'EB Garamond', serif;
+    min-height:100vh;
+  }
+  .wrap{max-width:640px; margin:0 auto; padding:0 0 80px;}
+
+  header.top{
+    position:sticky; top:0; z-index:10;
+    background:linear-gradient(180deg, var(--ink) 70%, transparent);
+    padding:22px 20px 14px;
+    border-bottom:1px solid var(--line);
+  }
+  .brand{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:700;
+    font-style:italic;
+    font-size:2.1rem;
+    letter-spacing:0.03em;
+    color:var(--gold-bright);
+    text-align:center;
+    margin:0;
+    text-shadow:0 0 18px rgba(212,175,55,0.25);
+  }
+  .brand-sub{
+    text-align:center;
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.62rem;
+    letter-spacing:0.28em;
+    color:var(--gold);
+    text-transform:uppercase;
+    margin-top:4px;
+    opacity:0.75;
+  }
+  .rule{
+    width:64px; height:1px;
+    background:var(--gold);
+    margin:12px auto 0;
+    opacity:0.5;
+  }
+
+  .composer{
+    margin:18px 20px 6px;
+    padding:14px 16px;
+    background:rgba(233,223,198,0.04);
+    border:1px solid var(--line);
+    border-radius:2px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.7rem;
+    color:var(--parch-dim);
+    letter-spacing:0.02em;
+  }
+
+  .feed{padding:8px 20px;}
+
+  .post{
+    position:relative;
+    padding:20px 0 18px;
+    border-bottom:1px solid var(--line);
+  }
+  .post.reply{
+    margin-left:34px;
+    padding-left:18px;
+    border-left:2px solid var(--gold);
+    border-bottom:1px solid rgba(181,137,43,0.15);
+  }
+  .post-head{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+  }
+  .avatar{
+    flex:0 0 auto;
+    width:46px; height:46px;
+    border-radius:50%;
+    background: radial-gradient(circle at 30% 30%, var(--parch-dim), #9c8f6c);
+    color:var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Cormorant Garamond', serif;
+    font-weight:700;
+    font-size:1.15rem;
+    border:1px solid var(--gold);
+  }
+  .who{flex:1; min-width:0;}
+  .namerow{display:flex; align-items:baseline; gap:6px; flex-wrap:wrap;}
+  .name{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:700;
+    font-size:1.15rem;
+    color:var(--parch);
+  }
+  .seal{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:15px; height:15px;
+    border-radius:50%;
+    background:var(--wax-bright);
+    color:var(--parch);
+    font-size:0.6rem;
+    font-family:'JetBrains Mono',monospace;
+    box-shadow:0 0 0 1px var(--gold) inset;
+  }
+  .handle{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.72rem;
+    color:var(--gold);
+    opacity:0.85;
+  }
+  .dot{color:var(--gold); opacity:0.5; font-size:0.7rem;}
+  .time{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.72rem;
+    color:var(--parch-dim);
+    opacity:0.6;
+  }
+  .body{
+    margin:10px 0 0 58px;
+    font-size:1.06rem;
+    line-height:1.5;
+    color:var(--parch);
+  }
+  .body .drop{
+    float:left;
+    font-family:'Cormorant Garamond', serif;
+    font-size:2.7rem;
+    line-height:0.8;
+    font-weight:700;
+    color:var(--gold-bright);
+    padding-right:8px;
+    padding-top:4px;
+  }
+  .tags{
+    margin:10px 0 0 58px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.72rem;
+    color:var(--wax-bright);
+  }
+  .stats{
+    margin:12px 0 0 58px;
+    display:flex; gap:22px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.72rem;
+    color:var(--parch-dim);
+    opacity:0.75;
+  }
+  .stats span{display:flex; align-items:center; gap:5px;}
+
+  .section-label{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.65rem;
+    letter-spacing:0.22em;
+    text-transform:uppercase;
+    color:var(--gold);
+    opacity:0.7;
+    padding:26px 0 4px;
+  }
+
+  .trend{
+    margin:16px 20px 0;
+    padding:14px 16px;
+    border:1px solid var(--line);
+    background:rgba(139,42,42,0.08);
+  }
+  .trend h3{
+    margin:0 0 8px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.65rem;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--gold-bright);
+  }
+  .trend-item{
+    display:flex; justify-content:space-between;
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.78rem;
+    padding:5px 0;
+    color:var(--parch-dim);
+  }
+  .trend-item b{color:var(--wax-bright); font-weight:500;}
+
+  footer{
+    text-align:center;
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.62rem;
+    letter-spacing:0.15em;
+    color:var(--gold);
+    opacity:0.4;
+    padding:30px 20px 0;
+    text-transform:uppercase;
+  }
+
+  @media (max-width:480px){
+    .body,.tags,.stats{margin-left:0; margin-top:12px;}
+    .post-head{flex-wrap:wrap;}
+    .post.reply{margin-left:12px; padding-left:12px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <p class="brand">The Eternal Feed</p>
+    <p class="brand-sub">Every age, one timeline</p>
+    <div class="rule"></div>
+  </header>
+
+  <div class="composer">&gt; what's on your mind, across all of history? _</div>
+
+  <div class="trend">
+    <h3>Trending across the ages</h3>
+    <div class="trend-item"><span>#IdesOfMarch</span><b>rising fast</b></div>
+    <div class="trend-item"><span>#PeaceForOurTime</span><b>aged badly</b></div>
+    <div class="trend-item"><span>#WhaleThread</span><b>ratio'd, then canonized</b></div>
+    <div class="trend-item"><span>#RoundTableDrama</span><b>trending</b></div>
+    <div class="trend-item"><span>#CalculusFirst</span><b>ongoing feud</b></div>
+  </div>
+
+  <div class="feed">
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">JC</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Julius Caesar</span>
+            <span class="seal">✓</span>
+            <span class="dot">·</span>
+            <span class="handle">@dictator_perpetuo</span>
+          </div>
+          <div class="time">Rome · just now</div>
+        </div>
+      </div>
+      <div class="body">Veni. Vidi. Vici. Thread below on how you can apply this framework to YOUR conquests. 🧵</div>
+      <div class="tags">#Gaul #PersonalBrand #Leadership</div>
+      <div class="stats"><span>♡ 44,000</span><span>↻ 3,900</span><span>💬 812</span></div>
+    </div>
+
+    <div class="post reply">
+      <div class="post-head">
+        <div class="avatar">S</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Socrates</span>
+            <span class="dot">·</span>
+            <span class="handle">@justasking</span>
+          </div>
+          <div class="time">Athens · 2m</div>
+        </div>
+      </div>
+      <div class="body">but what IS glory, really?</div>
+      <div class="stats"><span>♡ 61</span><span>↻ 2</span><span>💬 3,014 (mostly angry)</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">🕸️</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Merlin</span>
+            <span class="dot">·</span>
+            <span class="handle">@livesbackwards</span>
+          </div>
+          <div class="time">???</div>
+        </div>
+      </div>
+      <div class="body">strange feeling today. can't explain why. will make sense to you eventually.</div>
+      <div class="stats"><span>♡ 2,201</span><span>↻ 890</span><span>💬 "wait what does this mean"</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">CL</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Cleopatra</span>
+            <span class="seal">✓</span>
+            <span class="dot">·</span>
+            <span class="handle">@queenofthenile</span>
+          </div>
+          <div class="time">Alexandria · 5m</div>
+        </div>
+      </div>
+      <div class="body"><span class="drop">n</span>ot even going to caption this one.</div>
+      <div class="tags">📍 The Barge</div>
+      <div class="stats"><span>♡ 1.2M</span><span>↻ 340K</span><span>💬 "marry me" x9000</span></div>
+    </div>
+
+    <div class="post reply">
+      <div class="post-head">
+        <div class="avatar">BF</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Ben Franklin</span>
+            <span class="dot">·</span>
+            <span class="handle">@poorrichard</span>
+          </div>
+          <div class="time">Paris · 6m</div>
+        </div>
+      </div>
+      <div class="body">now THIS is diplomacy</div>
+      <div class="stats"><span>♡ 8,801</span><span>↻ 1,204</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">EA</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Elizabeth I</span>
+            <span class="seal">✓</span>
+            <span class="dot">·</span>
+            <span class="handle">@gloriana</span>
+          </div>
+          <div class="time">London · 11m</div>
+        </div>
+      </div>
+      <div class="body">To the gentleman in my DMs this morning: I am already married. To England. Please redirect your energy toward the Armada situation.</div>
+      <div class="stats"><span>♡ 90,400</span><span>↻ 12,000</span><span>💬 stunned silence</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">N</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Isaac Newton</span>
+            <span class="dot">·</span>
+            <span class="handle">@principia_guy</span>
+          </div>
+          <div class="time">Cambridge · 14m</div>
+        </div>
+      </div>
+      <div class="body">Not to start anything but I invented calculus. Some people in this very thread will disagree. Those people are wrong.</div>
+      <div class="tags">#CalculusFirst</div>
+      <div class="stats"><span>♡ 4,102</span><span>↻ 900</span><span>💬 endless</span></div>
+    </div>
+
+    <div class="post reply">
+      <div class="post-head">
+        <div class="avatar">GL</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">G.W. Leibniz</span>
+            <span class="dot">·</span>
+            <span class="handle">@leibniz_gw</span>
+          </div>
+          <div class="time">Hanover · 15m</div>
+        </div>
+      </div>
+      <div class="body">objectively false and I have receipts</div>
+      <div class="stats"><span>♡ 3,890</span><span>↻ 1,100</span></div>
+    </div>
+
+    <div class="post reply">
+      <div class="post-head">
+        <div class="avatar">AE</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Einstein</span>
+            <span class="dot">·</span>
+            <span class="handle">@relativelyright</span>
+          </div>
+          <div class="time">Princeton · 16m</div>
+        </div>
+      </div>
+      <div class="body">gentlemen, imagine you're both on a train moving at the speed of light. does it matter who invented the train?</div>
+      <div class="stats"><span>♡ 55,000</span><span>↻ 9,010</span><span>💬 "no one asked einstein"</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">MZ</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Mozart</span>
+            <span class="seal">✓</span>
+            <span class="dot">·</span>
+            <span class="handle">@wolfyamadeus</span>
+          </div>
+          <div class="time">Vienna · 19m</div>
+        </div>
+      </div>
+      <div class="body">new one, wrote it during breakfast, don't overthink it 🎼</div>
+      <div class="stats"><span>♡ 210K</span><span>↻ 40K</span><span>💬 "how"</span></div>
+    </div>
+
+    <div class="post reply">
+      <div class="post-head">
+        <div class="avatar">JB</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">J.S. Bach</span>
+            <span class="dot">·</span>
+            <span class="handle">@fugue_state</span>
+          </div>
+          <div class="time">Leipzig · 20m</div>
+        </div>
+      </div>
+      <div class="body">did this exact structure in 1723. kids these days repost it and call it new.</div>
+      <div class="stats"><span>♡ 18,400</span><span>↻ 6,200</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">NT</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Nikola Tesla</span>
+            <span class="dot">·</span>
+            <span class="handle">@ac_supremacy</span>
+          </div>
+          <div class="time">4:07am · New York</div>
+        </div>
+      </div>
+      <div class="body">can we talk about pigeons for a second. also wireless power is real and they are all suppressing it. also pigeons.</div>
+      <div class="stats"><span>♡ 211</span><span>↻ 40</span><span>💬 followers: 200</span></div>
+    </div>
+
+    <div class="post reply">
+      <div class="post-head">
+        <div class="avatar">TE</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Thomas Edison</span>
+            <span class="seal">✓</span>
+            <span class="dot">·</span>
+            <span class="handle">@ThomasEdisonOfficial</span>
+          </div>
+          <div class="time">4:11am</div>
+        </div>
+      </div>
+      <div class="body">AC will kill you in your sleep. DC is the only safe current. this is not a debate.</div>
+      <div class="stats"><span>♡ 40,200</span><span>↻ 8,000</span><span>💬 still going, 140 yrs later</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">AGB</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Alexander Graham Bell</span>
+            <span class="seal">✓</span>
+            <span class="dot">·</span>
+            <span class="handle">@ringringitsme</span>
+          </div>
+          <div class="time">Boston · 22m</div>
+        </div>
+      </div>
+      <div class="body">Excited to announce: just made my first call!! Huge thanks to Watson for believing in this vision from day one. More to come 📞</div>
+      <div class="stats"><span>♡ 61,900</span><span>↻ 15,004</span><span>💬 "congrats!!" x400</span></div>
+    </div>
+
+    <div class="post reply">
+      <div class="post-head">
+        <div class="avatar">EG</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Elisha Gray</span>
+            <span class="dot">·</span>
+            <span class="handle">@actuallyfirst</span>
+          </div>
+          <div class="time">22m</div>
+        </div>
+      </div>
+      <div class="body">filed the same day. SAME DAY.</div>
+      <div class="stats"><span>♡ 620</span><span>↻ 90</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">DV</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Leonardo da Vinci</span>
+            <span class="dot">·</span>
+            <span class="handle">@renaissance_man</span>
+          </div>
+          <div class="time">Milan · 27m</div>
+        </div>
+      </div>
+      <div class="body">finally finished the flying machine. mostly to prove a point to Michelangelo. it does not fly. the point stands regardless.</div>
+      <div class="stats"><span>♡ 33,300</span><span>↻ 4,500</span><span>💬 "coming soon" (x14 posts prior)</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">JA</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Joan of Arc</span>
+            <span class="dot">·</span>
+            <span class="handle">@maidoforleans</span>
+          </div>
+          <div class="time">Orléans · 30m</div>
+        </div>
+      </div>
+      <div class="body">battle plan thread. source: a voice I trust completely. no, I will not be sharing screenshots.</div>
+      <div class="stats"><span>♡ 88,000</span><span>↻ 21,000</span><span>💬 "account suspended" (later, reinstated centuries after)</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">SH</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Sam Houston</span>
+            <span class="dot">·</span>
+            <span class="handle">@bigtexasenergy</span>
+          </div>
+          <div class="time">Texas · 33m</div>
+        </div>
+      </div>
+      <div class="body">lived with the Cherokee for a few years, ran a whole republic, no big deal. y'all worry too much about "settling down."</div>
+      <div class="stats"><span>♡ 14,200</span><span>↻ 2,900</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">HW</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Hiawatha</span>
+            <span class="dot">·</span>
+            <span class="handle">@confederacybuilder</span>
+          </div>
+          <div class="time">Onondaga · 36m</div>
+        </div>
+      </div>
+      <div class="body">five nations, one council fire, everyone still gets a voice. this is the actual blueprint, not the flashy stuff you'll see trending later.</div>
+      <div class="stats"><span>♡ 29,800</span><span>↻ 11,200</span><span>💬 quiet respect, not noise</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">EP</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Edgar Allan Poe</span>
+            <span class="dot">·</span>
+            <span class="handle">@nevermore</span>
+          </div>
+          <div class="time">3:12am · Baltimore</div>
+        </div>
+      </div>
+      <div class="body">🐦🐦🐦 tapping. tapping. someone is tapping. it is only my own reflection in the comment count.</div>
+      <div class="stats"><span>♡ 9,001</span><span>↻ 3,000</span><span>💬 self-replies only</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">HM</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Herman Melville</span>
+            <span class="dot">·</span>
+            <span class="handle">@callmeishmael</span>
+          </div>
+          <div class="time">2h ago</div>
+        </div>
+      </div>
+      <div class="body">posted the whale thread. 135 chapters. read rate: low. conviction: total.</div>
+      <div class="tags">#WhaleThread</div>
+      <div class="stats"><span>♡ 12 (in 1851)</span><span>♡ 4.2M (now)</span><span>💬 "required reading" — a century late</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">EH</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Ernest Hemingway</span>
+            <span class="dot">·</span>
+            <span class="handle">@sixwordbio</span>
+          </div>
+          <div class="time">Key West · 40m</div>
+        </div>
+      </div>
+      <div class="body">Caught fish. Drank well. No adjectives.</div>
+      <div class="stats"><span>♡ 71,000</span><span>↻ 9,900</span><span>💬 "beautiful" — William Faulkner reported</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">MT</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Mark Twain</span>
+            <span class="seal">✓</span>
+            <span class="dot">·</span>
+            <span class="handle">@clemens_wit</span>
+          </div>
+          <div class="time">45m</div>
+        </div>
+      </div>
+      <div class="body">reports of my irrelevance have been greatly exaggerated. also I never said half of what's attributed to me, but I'll allow it, it's usually an improvement.</div>
+      <div class="stats"><span>♡ 61,300</span><span>↻ 14,700</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">GT</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Geoffrey Chaucer</span>
+            <span class="dot">·</span>
+            <span class="handle">@canterburytales</span>
+          </div>
+          <div class="time">1h</div>
+        </div>
+      </div>
+      <div class="body">group of us on a pilgrimage, everyone's telling a story, mine's obviously the best one, don't @ me (the Miller's is filthy, be warned)</div>
+      <div class="stats"><span>♡ 8,800</span><span>↻ 2,100</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">JT</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">J.R.R. Tolkien</span>
+            <span class="dot">·</span>
+            <span class="handle">@middleearth</span>
+          </div>
+          <div class="time">3d ago</div>
+        </div>
+      </div>
+      <div class="body">appendices are the best part. I don't make the rules. wait, I do. read the appendices.</div>
+      <div class="stats"><span>♡ 320K</span><span>↻ 88,000</span><span>💬 "still processing book one"</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">ST</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Sun Tzu</span>
+            <span class="dot">·</span>
+            <span class="handle">@theartofwar</span>
+          </div>
+          <div class="time">1h</div>
+        </div>
+      </div>
+      <div class="body">The supreme art of war is to subdue the enemy without fighting.</div>
+      <div class="stats"><span>♡ 900K</span><span>↻ 512K</span><span>💬 quoted in every productivity app since</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">ES</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Erwin Schrödinger</span>
+            <span class="dot">·</span>
+            <span class="handle">@boxstatus</span>
+          </div>
+          <div class="time">1h</div>
+        </div>
+      </div>
+      <div class="body">Definitely alive. Or not. Depends who's looking.</div>
+      <div class="stats"><span>♡ 61,000</span><span>↻ 40,200</span><span>💬 argument still unresolved</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">NC</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Neville Chamberlain</span>
+            <span class="dot">·</span>
+            <span class="handle">@peaceforourtime</span>
+          </div>
+          <div class="time">1938 · pinned</div>
+        </div>
+      </div>
+      <div class="body">Peace for our time!! Signed agreement attached. Feeling very good about this one.</div>
+      <div class="tags">#PeaceForOurTime</div>
+      <div class="stats"><span>♡ 2,000 (then)</span><span>💬 4.8M quote-tweets (since)</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">TR</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Teddy Roosevelt</span>
+            <span class="seal">✓</span>
+            <span class="dot">·</span>
+            <span class="handle">@bullmoose</span>
+          </div>
+          <div class="time">1h</div>
+        </div>
+      </div>
+      <div class="body">Got shot on the way to give a speech. Gave the speech anyway. Bloody note attached for proof. Speak softly, etc.</div>
+      <div class="stats"><span>♡ 501,000</span><span>↻ 90,300</span><span>💬 "sir please go to a hospital"</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">GP</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">General Patton</span>
+            <span class="dot">·</span>
+            <span class="handle">@oldbloodandguts</span>
+          </div>
+          <div class="time">2h</div>
+        </div>
+      </div>
+      <div class="body">said the quiet part loud again. account under review. ivory-handled pistols remain unbothered.</div>
+      <div class="stats"><span>♡ 40,900</span><span>↻ 12,000</span><span>💬 "sir this is the third time"</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">DM</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Bernard Montgomery</span>
+            <span class="dot">·</span>
+            <span class="handle">@methodical_monty</span>
+          </div>
+          <div class="time">2h</div>
+        </div>
+      </div>
+      <div class="body">will post the battle update once every variable is confirmed. some of you post before you're ready. that is not leadership, that is chaos.</div>
+      <div class="stats"><span>♡ 8,100</span><span>↻ 900</span><span>💬 Patton has thoughts</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">DA</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Douglas MacArthur</span>
+            <span class="seal">✓</span>
+            <span class="dot">·</span>
+            <span class="handle">@ishallreturn</span>
+          </div>
+          <div class="time">2h</div>
+        </div>
+      </div>
+      <div class="body">I shall return. (trailer drop, full announcement soon, corncob pipe as always)</div>
+      <div class="stats"><span>♡ 220,000</span><span>↻ 61,000</span><span>💬 boss has entered the chat</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">RG</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Ulysses S. Grant</span>
+            <span class="dot">·</span>
+            <span class="handle">@justkeepwinning</span>
+          </div>
+          <div class="time">3h</div>
+        </div>
+      </div>
+      <div class="body">no thread. no branding. we won. moving on.</div>
+      <div class="stats"><span>♡ 71,200</span><span>↻ 8,000</span></div>
+    </div>
+
+    <div class="post reply">
+      <div class="post-head">
+        <div class="avatar">RL</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Robert E. Lee</span>
+            <span class="dot">·</span>
+            <span class="handle">@formaltactics</span>
+          </div>
+          <div class="time">3h</div>
+        </div>
+      </div>
+      <div class="body">Well fought. My compliments on the terms.</div>
+      <div class="stats"><span>♡ 40,000</span><span>↻ 5,100</span><span>💬 unexpectedly gracious given everything above</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">EL</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Elvis</span>
+            <span class="seal">✓</span>
+            <span class="dot">·</span>
+            <span class="handle">@theking</span>
+          </div>
+          <div class="time">Vegas · 4h</div>
+        </div>
+      </div>
+      <div class="body">residency show tonight. thank you, thank you very much.</div>
+      <div class="stats"><span>♡ 3.4M</span><span>↻ 900K</span><span>💬 long-time fans quietly checking in on him</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">PL</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Plato</span>
+            <span class="dot">·</span>
+            <span class="handle">@theacademy</span>
+          </div>
+          <div class="time">5h</div>
+        </div>
+      </div>
+      <div class="body">new dialogue up. Socrates said it, I wrote it, we all benefit from the arrangement. new invite-only chat forming, DM to apply.</div>
+      <div class="tags">#TheCave</div>
+      <div class="stats"><span>♡ 61,900</span><span>↻ 9,400</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">KA</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">King Arthur</span>
+            <span class="seal">✓</span>
+            <span class="dot">·</span>
+            <span class="handle">@excalibur</span>
+          </div>
+          <div class="time">Camelot · 6h</div>
+        </div>
+      </div>
+      <div class="body">no head of the table. that's intentional. everyone's voice counts equally here. (feeling good about this group chat lately, tbh)</div>
+      <div class="stats"><span>♡ 118,000</span><span>↻ 30,000</span></div>
+    </div>
+
+    <div class="post reply">
+      <div class="post-head">
+        <div class="avatar">LC</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Lancelot</span>
+            <span class="dot">·</span>
+            <span class="handle">@bestknight</span>
+          </div>
+          <div class="time">6h</div>
+        </div>
+      </div>
+      <div class="body">yeah. great group. love it here. no notes.</div>
+      <div class="stats"><span>♡ 9,900</span><span>↻ 200</span><span>💬 (suspicious silence in the replies)</span></div>
+    </div>
+
+    <div class="post reply">
+      <div class="post-head">
+        <div class="avatar">ML</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Morgan le Fay</span>
+            <span class="dot">·</span>
+            <span class="handle">@longgame</span>
+          </div>
+          <div class="time">6h</div>
+        </div>
+      </div>
+      <div class="body">interesting that you'd say that right now.</div>
+      <div class="stats"><span>♡ 21,000</span><span>↻ 8,800</span><span>💬 nobody sure whose side she's on</span></div>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">BW</div>
+        <div class="who">
+          <div class="namerow">
+            <span class="name">Beowulf</span>
+            <span class="dot">·</span>
+            <span class="handle">@grendelslayer</span>
+          </div>
+          <div class="time">7h</div>
+        </div>
+      </div>
+      <div class="body">bare-handed. no sword. some of you need armor to do half of what I did before breakfast.</div>
+      <div class="stats"><span>♡ 88,900</span><span>↻ 41,000</span><span>💬 "and the mother?" "handled."</span></div>
+    </div>
+
+  </div>
+
+  <footer>est. the beginning of recorded time — still posting</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LinkedIn — Eternal Professional Network</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;1,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef2f0;
+    --card:#ffffff;
+    --line:#dfe5e1;
+    --ink:#1d2a24;
+    --dim:#5c6b62;
+    --brand:#2f5d4f;
+    --brand-lt:#e4efe9;
+    --gold:#a9822f;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;}
+  .wrap{max-width:600px;margin:0 auto;padding:0 0 60px;}
+  header{padding:20px 20px 14px;text-align:center;}
+  .logo{font-family:'Fraunces',serif;font-weight:700;font-size:1.5rem;color:var(--brand);}
+  .logo span{font-style:italic;color:var(--gold);}
+  .subtitle{font-family:'JetBrains Mono',monospace;font-size:0.65rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--dim);margin-top:2px;}
+  .post{background:var(--card);margin:14px 16px;border-radius:8px;border:1px solid var(--line);padding:18px;box-shadow:0 1px 2px rgba(0,0,0,0.04);}
+  .head{display:flex;gap:12px;}
+  .av{flex:0 0 auto;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--brand),var(--gold));color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:700;font-size:1.1rem;}
+  .who{flex:1;min-width:0;}
+  .name{font-weight:700;font-size:1rem;}
+  .name .check{color:var(--brand);font-size:0.85rem;}
+  .role{font-size:0.82rem;color:var(--dim);line-height:1.3;}
+  .time{font-size:0.76rem;color:var(--dim);margin-top:2px;}
+  .body{margin-top:12px;font-size:0.95rem;line-height:1.5;}
+  .stats{margin-top:14px;padding-top:10px;border-top:1px solid var(--line);display:flex;gap:18px;color:var(--dim);font-size:0.78rem;font-family:'JetBrains Mono',monospace;}
+  .comment{margin-top:12px;padding:10px 12px;background:var(--brand-lt);border-radius:6px;display:flex;gap:10px;}
+  .cav{flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:700;font-size:0.7rem;}
+  .cname{font-weight:700;font-size:0.82rem;}
+  .crole{font-size:0.7rem;color:var(--dim);}
+  .ctext{font-size:0.85rem;margin-top:3px;line-height:1.4;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="logo">Linked<span>In Memoriam</span></div>
+  <div class="subtitle">the eternal professional network</div>
+</header>
+
+<div class="post">
+  <div class="head">
+    <div class="av">AGB</div>
+    <div class="who">
+      <div class="name">Alexander Graham Bell <span class="check">✓</span></div>
+      <div class="role">Founder & Inventor at Bell Telephone Company</div>
+      <div class="time">Boston · just now</div>
+    </div>
+  </div>
+  <div class="body">Excited to announce: just made my first call!! Huge thanks to my collaborator Thomas Watson for believing in this vision from day one. This is just the beginning. 📞</div>
+  <div class="stats"><span>👍 61.9K reactions</span><span>💬 15,004 comments</span></div>
+  <div class="comment">
+    <div class="cav">EG</div>
+    <div><div class="cname">Elisha Gray</div><div class="crole">Inventor, Independent</div><div class="ctext">Congrats — filed the same day, for what it's worth. Great milestone for the field either way.</div></div>
+  </div>
+  <div class="comment">
+    <div class="cav">TE</div>
+    <div><div class="cname">Thomas Edison</div><div class="crole">Founder, Edison Electric</div><div class="ctext">Impressive work. Curious how you're thinking about power delivery for scale — happy to connect on that.</div></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="head">
+    <div class="av">EI</div>
+    <div class="who">
+      <div class="name">Elizabeth I <span class="check">✓</span></div>
+      <div class="role">Sovereign & CEO, Kingdom of England</div>
+      <div class="time">London · 8m</div>
+    </div>
+  </div>
+  <div class="body">44 years leading this organization and I'm proud to say we've never had a succession crisis leak to the press. Grateful for a council I can trust and a nation that shows up every day. #Leadership #Legacy</div>
+  <div class="stats"><span>👍 90.4K reactions</span><span>💬 12K comments</span></div>
+  <div class="comment">
+    <div class="cav">BF</div>
+    <div><div class="cname">Ben Franklin</div><div class="crole">Diplomat & Publisher</div><div class="ctext">Discipline like this is rare. Taking notes for our own transition planning.</div></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="head">
+    <div class="av">HW</div>
+    <div class="who">
+      <div class="name">Hiawatha</div>
+      <div class="role">Co-Founder, Haudenosaunee Confederacy</div>
+      <div class="time">Onondaga · 15m</div>
+    </div>
+  </div>
+  <div class="body">Proud of what we've built: five nations, one council fire, every voice represented. Coalition-building isn't flashy, but it's the actual blueprint for anything that lasts. Open to sharing what we've learned with other leaders navigating multi-party governance.</div>
+  <div class="stats"><span>👍 29.8K reactions</span><span>💬 11.2K comments</span></div>
+  <div class="comment">
+    <div class="cav">BF</div>
+    <div><div class="cname">Ben Franklin</div><div class="crole">Diplomat & Publisher</div><div class="ctext">This is genuinely one of the better governance frameworks I've studied. Would love a call to compare notes on our own union.</div></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="head">
+    <div class="av">UG</div>
+    <div class="who">
+      <div class="name">Ulysses S. Grant</div>
+      <div class="role">Commanding General → President-elect</div>
+      <div class="time">3h</div>
+    </div>
+  </div>
+  <div class="body">No branding exercise here. We set the objective, we executed, we won. Grateful to every soldier who showed up and did the work without needing a highlight reel.</div>
+  <div class="stats"><span>👍 71.2K reactions</span><span>💬 8K comments</span></div>
+  <div class="comment">
+    <div class="cav">RL</div>
+    <div><div class="cname">Robert E. Lee</div><div class="crole">Former Commanding General</div><div class="ctext">Well fought. My compliments on the terms — handled with more grace than most transitions I've seen.</div></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="head">
+    <div class="av">TR</div>
+    <div class="who">
+      <div class="name">Teddy Roosevelt <span class="check">✓</span></div>
+      <div class="role">26th President · Founder, Bull Moose Party</div>
+      <div class="time">5h</div>
+    </div>
+  </div>
+  <div class="body">Sometimes the org you built no longer reflects your values, and the right move is to build a new one. Announcing my next chapter. Speak softly, carry a big stick, and never be afraid to start over. #CareerPivot #Leadership</div>
+  <div class="stats"><span>👍 220K reactions</span><span>💬 61K comments</span></div>
+  <div class="comment">
+    <div class="cav">DA</div>
+    <div><div class="cname">Douglas MacArthur</div><div class="crole">General, U.S. Army</div><div class="ctext">Bold move. Respect the willingness to walk when the mission no longer aligns.</div></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="head">
+    <div class="av">SH</div>
+    <div class="who">
+      <div class="name">Sam Houston</div>
+      <div class="role">Founding President, Republic of Texas</div>
+      <div class="time">7h</div>
+    </div>
+  </div>
+  <div class="body">Career reflection: went from state governor, to living with the Cherokee Nation for several years, to founding and leading a republic. Non-linear paths build the best leaders. Don't let anyone tell you a gap on the resume is a weakness.</div>
+  <div class="stats"><span>👍 14.2K reactions</span><span>💬 2.9K comments</span></div>
+  <div class="comment">
+    <div class="cav">BF</div>
+    <div><div class="cname">Ben Franklin</div><div class="crole">Diplomat & Publisher</div><div class="ctext">This is the most honest career story on this platform today.</div></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="head">
+    <div class="av">CL</div>
+    <div class="who">
+      <div class="name">Cleopatra VII <span class="check">✓</span></div>
+      <div class="role">Pharaoh & CEO, Ptolemaic Kingdom</div>
+      <div class="time">Alexandria · 9h</div>
+    </div>
+  </div>
+  <div class="body">Fluent in nine languages, ran diplomacy across three empires simultaneously, and still delivered every quarter on time. Brand consistency isn't an accessory to leadership — it is leadership.</div>
+  <div class="stats"><span>👍 1.2M reactions</span><span>💬 340K comments</span></div>
+  <div class="comment">
+    <div class="cav">JC</div>
+    <div><div class="cname">Julius Caesar</div><div class="crole">Dictator Perpetuo, Rome</div><div class="ctext">Genuinely one of the sharpest strategic minds I've worked alongside. High praise, rarely given.</div></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="head">
+    <div class="av">EI</div>
+    <div class="who">
+      <div class="name">Albert Einstein <span class="check">✓</span></div>
+      <div class="role">Theoretical Physicist, Princeton</div>
+      <div class="time">9h</div>
+    </div>
+  </div>
+  <div class="body">Reflecting on a career-defining insight today: sometimes the biggest breakthroughs come from questioning the assumptions everyone else takes for granted. Encourage your teams to ask "why" one more time than feels comfortable. #Innovation #ThoughtLeadership</div>
+  <div class="stats"><span>👍 55K reactions</span><span>💬 9K comments</span></div>
+  <div class="comment">
+    <div class="cav">IN</div>
+    <div><div class="cname">Isaac Newton</div><div class="crole">Mathematician & Physicist</div><div class="ctext">Strong post. Would add: sometimes the breakthrough is also just correctly claiming credit before someone else does. Asking for a friend.</div></div>
+  </div>
+  <div class="comment">
+    <div class="cav">S</div>
+    <div><div class="cname">Socrates</div><div class="crole">Philosopher, Independent</div><div class="ctext">Agreed on the "why" point. Curious — how do you define a breakthrough, exactly?</div></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="head">
+    <div class="av">ST</div>
+    <div class="who">
+      <div class="name">Sun Tzu</div>
+      <div class="role">Strategic Advisor & Author, The Art of War</div>
+      <div class="time">11h</div>
+    </div>
+  </div>
+  <div class="body">The supreme art of leadership is achieving your objectives without a single unnecessary conflict. Something I wish more of my network understood before their Q3 planning meetings. #Strategy #Leadership</div>
+  <div class="stats"><span>👍 900K reactions</span><span>💬 512K comments</span></div>
+  <div class="comment">
+    <div class="cav">GP</div>
+    <div><div class="cname">General Patton</div><div class="crole">General, U.S. Army</div><div class="ctext">Respectfully, disagree — decisive conflict, executed fast, has its own place in the strategy toolkit.</div></div>
+  </div>
+  <div class="comment">
+    <div class="cav">DM</div>
+    <div><div class="cname">Bernard Montgomery</div><div class="crole">Field Marshal</div><div class="ctext">This is why I always wait until every variable is confirmed before committing resources. Well said.</div></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="head">
+    <div class="av">EL</div>
+    <div class="who">
+      <div class="name">Elvis Presley <span class="check">✓</span></div>
+      <div class="role">Recording Artist & Performer</div>
+      <div class="time">13h</div>
+    </div>
+  </div>
+  <div class="body">Grateful to be closing out another residency run tonight. Nearly two decades in this industry and I'm still humbled every night the audience shows up. Thank you, thank you very much. #Gratitude #Career</div>
+  <div class="stats"><span>👍 3.4M reactions</span><span>💬 900K comments</span></div>
+  <div class="comment">
+    <div class="cav">MT</div>
+    <div><div class="cname">Mark Twain</div><div class="crole">Author & Speaker</div><div class="ctext">Longevity like this in any industry deserves real respect. Take care of yourself out there.</div></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="head">
+    <div class="av">BW</div>
+    <div class="who">
+      <div class="name">Beowulf</div>
+      <div class="role">Warrior & Later, King of the Geats</div>
+      <div class="time">15h</div>
+    </div>
+  </div>
+  <div class="body">Career reflection: started as an individual contributor taking on high-risk projects nobody else wanted (see: Grendel). Ended up leading an entire kingdom. Sometimes the unglamorous, dangerous work early on is exactly what builds the trust you need later. #CareerGrowth</div>
+  <div class="stats"><span>👍 88.9K reactions</span><span>💬 41K comments</span></div>
+  <div class="comment">
+    <div class="cav">CL</div>
+    <div><div class="cname">Cleopatra VII</div><div class="crole">Pharaoh & CEO, Ptolemaic Kingdom</div><div class="ctext">Love this arc. The "do the unglamorous work first" advice is timeless — wish more early-career people heard it.</div></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="head">
+    <div class="av">MR</div>
+    <div class="who">
+      <div class="name">Merlin</div>
+      <div class="role">Advisor to the Crown</div>
+      <div class="time">17h</div>
+    </div>
+  </div>
+  <div class="body">On mentorship: the best advice I ever gave, I gave before anyone knew they'd need it. If you're in an advisory role, timing your counsel matters as much as the counsel itself. #Mentorship #Leadership</div>
+  <div class="stats"><span>👍 61K reactions</span><span>💬 12K comments</span></div>
+  <div class="comment">
+    <div class="cav">HW</div>
+    <div><div class="cname">Hiawatha</div><div class="crole">Co-Founder, Haudenosaunee Confederacy</div><div class="ctext">This resonates deeply — coalition work is mostly patient, quiet groundwork long before anyone notices it mattered.</div></div>
+  </div>
+  <div class="comment">
+    <div class="cav">S</div>
+    <div><div class="cname">Socrates</div><div class="crole">Philosopher, Independent</div><div class="ctext">Genuine question — how do you know when someone is ready to receive counsel?</div></div>
+  </div>
+</div>
+
+<div class="post">
+  <div class="head">
+    <div class="av">JT</div>
+    <div class="who">
+      <div class="name">J.R.R. Tolkien</div>
+      <div class="role">Author & Philologist, Oxford</div>
+      <div class="time">19h</div>
+    </div>
+  </div>
+  <div class="body">Reflecting on a long project timeline today: it took over a decade between major releases, and I know that frustrated a lot of stakeholders. But some work simply cannot be rushed without losing what makes it worth doing. #ProductManagement #Patience</div>
+  <div class="stats"><span>👍 320K reactions</span><span>💬 88K comments</span></div>
+  <div class="comment">
+    <div class="cav">JB</div>
+    <div><div class="cname">J.S. Bach</div><div class="crole">Composer & Kapellmeister</div><div class="ctext">Fully agree. I shipped on a strict weekly cadence for decades and still don't think either approach is "wrong" — just different risk tolerances.</div></div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>
