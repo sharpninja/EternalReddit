@@ -57,7 +57,29 @@ var authBuilder = builder.Services
         options.DefaultScheme = "Cookies";
         options.DefaultChallengeScheme = "Cookies";
     })
-    .AddCookie("Cookies");
+    .AddCookie("Cookies", options =>
+    {
+        // The WASM client calls /api endpoints. An unauthenticated call must get
+        // a 401/403, not a 302 redirect to a login page - that redirect falls
+        // back to index.html (HTML, 200) and the client would then try to parse
+        // HTML as JSON and throw.
+        options.Events.OnRedirectToLogin = ctx =>
+        {
+            if (ctx.Request.Path.StartsWithSegments("/api"))
+                ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            else
+                ctx.Response.Redirect(ctx.RedirectUri);
+            return Task.CompletedTask;
+        };
+        options.Events.OnRedirectToAccessDenied = ctx =>
+        {
+            if (ctx.Request.Path.StartsWithSegments("/api"))
+                ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+            else
+                ctx.Response.Redirect(ctx.RedirectUri);
+            return Task.CompletedTask;
+        };
+    });
 
 void AddOidc(string scheme, string authority, Action<OpenIdConnectOptions>? configure = null)
 {

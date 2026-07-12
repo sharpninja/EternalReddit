@@ -99,6 +99,17 @@ public class PostServiceTests
     }
 
     [Fact]
+    public async Task Columbus_is_always_the_first_comment()
+    {
+        var svc = Build(); // no AI providers configured
+        var post = (await svc.CreateAsync(Req("anything"))).Post!;
+
+        Assert.Equal("Christopher Columbus", post.Replies[0].Figure);
+        Assert.Equal("First!", post.Replies[0].Body);
+        Assert.Equal(AiProvider.Scripted, post.Replies[0].Provider);
+    }
+
+    [Fact]
     public async Task Distinct_users_each_get_their_own_vote()
     {
         var svc = Build();

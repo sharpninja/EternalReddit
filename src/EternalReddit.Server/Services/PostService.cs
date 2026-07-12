@@ -108,7 +108,17 @@ public sealed class PostService : IPostService
         };
         _posts.Add(post);
 
+        // The running gag: Christopher Columbus is always first.
+        post.Replies.Insert(0, new Reply
+        {
+            Figure = "Christopher Columbus",
+            Provider = AiProvider.Scripted,
+            Body = "First!",
+            CreatedUtc = DateTime.UtcNow
+        });
+
         await GenerateReplyThreadAsync(post, ct);
+        _posts.Update(post); // persist Columbus even when no AI providers are configured
         await _notifier.FeedChangedAsync();
         return CreatePostResult.Created(post);
     }

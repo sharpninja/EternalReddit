@@ -22,16 +22,18 @@ public sealed class EternalRedditApi
         => _http.PostAsJsonAsync("api/posts", new CreatePostBody(title, body));
 
     public async Task<VoteResult?> VotePostAsync(Guid postId, string dir)
-    {
-        var res = await _http.PostAsync($"api/posts/{postId}/vote?dir={dir}", null);
-        return res.IsSuccessStatusCode ? await res.Content.ReadFromJsonAsync<VoteResult>() : null;
-    }
+        => await ReadVote(await _http.PostAsync($"api/posts/{postId}/vote?dir={dir}", null));
 
     public async Task<VoteResult?> VoteReplyAsync(Guid postId, Guid replyId, string dir)
-    {
-        var res = await _http.PostAsync($"api/posts/{postId}/replies/{replyId}/vote?dir={dir}", null);
-        return res.IsSuccessStatusCode ? await res.Content.ReadFromJsonAsync<VoteResult>() : null;
-    }
+        => await ReadVote(await _http.PostAsync($"api/posts/{postId}/replies/{replyId}/vote?dir={dir}", null));
+
+    // Only parse a genuine JSON success body. An unauthenticated vote returns 401
+    // (or, historically, an HTML login fallback), which must never be parsed as a
+    // VoteResult - that was the "unhandled error" on voting while logged out.
+    private static async Task<VoteResult?> ReadVote(HttpResponseMessage res)
+        => res.IsSuccessStatusCode && res.Content.Headers.ContentType?.MediaType == "application/json"
+            ? await res.Content.ReadFromJsonAsync<VoteResult>()
+            : null;
 
     public async Task<int> SharePostAsync(Guid postId, Guid? replyId = null)
     {

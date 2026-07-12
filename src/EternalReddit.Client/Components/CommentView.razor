@@ -9,7 +9,10 @@
     <div class="cmain">
         <div class="cmeta">
             <span class="figure">@Reply.Figure</span>
-            <span class="badge badge-@Reply.Provider.ToString().ToLowerInvariant()">@Reply.Provider</span>
+            @if (Reply.Provider != AiProvider.Scripted)
+            {
+                <span class="badge badge-@Reply.Provider.ToString().ToLowerInvariant()">@Reply.Provider</span>
+            }
             <span class="dim">· @Ago(Reply.CreatedUtc)@(Reply.IsBackground ? " · auto" : "")</span>
         </div>
         <div class="ctext">@Reply.Body</div>

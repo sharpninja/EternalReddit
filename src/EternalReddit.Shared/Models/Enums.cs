@@ -6,7 +6,9 @@ public enum AiProvider
     HuggingFace,
     Claude,
     OpenAI,
-    Grok
+    Grok,
+    /// <summary>Not an AI provider: a scripted/system comment (e.g. the Columbus gag).</summary>
+    Scripted
 }
 
 /// <summary>Direction of a vote; the value is the karma delta.</summary>
