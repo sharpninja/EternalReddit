@@ -63,7 +63,11 @@ coverage/
 *.user
 [Dd]ebug/
 [Rr]elease/
-data/
+# LiteDB runtime store only (repo-root ./data). Anchored so it does NOT match
+# source folders like src/EternalX.Blazor.Server/Data/ (git is case-insensitive
+# on Windows, so a bare "data/" matched "Data/" and dropped it from the repo).
+/data/
+*.db
 *.db-log
 
 # MCP Server workspace local state (managed by the server, not source)
