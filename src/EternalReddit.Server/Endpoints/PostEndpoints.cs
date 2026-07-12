@@ -69,6 +69,20 @@ public static class PostEndpoints
             Results.Ok(svc.GetRecent(500).Where(p => p.AuthorUserId == AuthorId(http)).ToList()))
             .RequireAuthorization();
 
+        // --- Anonymous read: public profile for any name (user or figure) ---
+        app.MapGet("/api/users/{name}", (IPostService svc, string name) =>
+        {
+            var all = svc.GetRecent(500);
+            var posts = all.Where(p => p.AuthorName == name).ToList();
+            var comments = all
+                .SelectMany(p => p.Replies
+                    .Where(r => r.Figure == name)
+                    .Select(r => new ProfileComment(p.Id, string.IsNullOrWhiteSpace(p.Title) ? "(untitled)" : p.Title, r.Body, r.Score, r.CreatedUtc)))
+                .OrderByDescending(c => c.CreatedUtc).Take(50).ToList();
+            return Results.Ok(new UserProfile(name, posts.Count, comments.Count,
+                posts.Sum(p => p.Score), comments.Sum(c => c.Score), posts, comments));
+        });
+
         return app;
     }
 

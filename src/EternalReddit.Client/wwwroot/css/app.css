@@ -201,6 +201,16 @@ table.logs tr:first-child td { border-top: none; }
     padding: 0 6px; border-radius: 3px; text-transform: uppercase;
 }
 
-/* ---- profile ---- */
+/* ---- profile + clickable names ---- */
 .profile-head { margin-bottom: 14px; }
 .profile-name { margin: 0; font-size: 1.3rem; }
+.section { font-size: 0.95rem; margin: 18px 0 8px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.03em; }
+.authorlink { font-weight: 600; }
+.authorlink:hover, a.figure:hover { color: var(--accent); }
+.profile-comment {
+    display: block; background: var(--card); border: 1px solid var(--line);
+    border-radius: 8px; padding: 8px 12px; margin-bottom: 8px;
+}
+.profile-comment:hover { border-color: var(--accent); }
+.pc-meta { font-size: 0.75rem; }
+.pc-body { font-size: 0.9rem; line-height: 1.4; margin-top: 2px; }

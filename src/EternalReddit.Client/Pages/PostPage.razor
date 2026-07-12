@@ -26,7 +26,18 @@
                 <button class="arrow" @onclick='() => VotePost("down")'>&#9660;</button>
             </div>
             <div class="pmain">
-                <div class="pmeta">Posted by @(string.IsNullOrEmpty(_post.AuthorName) ? "u/anon" : _post.AuthorName) · @Ago(_post.CreatedUtc)</div>
+                <div class="pmeta">
+                    Posted by
+                    @if (!string.IsNullOrEmpty(_post.AuthorName))
+                    {
+                        <a class="authorlink" href="@($"u/{Uri.EscapeDataString(_post.AuthorName)}")">@_post.AuthorName</a>
+                    }
+                    else
+                    {
+                        <span>u/anon</span>
+                    }
+                    · @Ago(_post.CreatedUtc)
+                </div>
                 @if (!string.IsNullOrWhiteSpace(_post.Title))
                 {
                     <h3 class="ptitle">@_post.Title</h3>

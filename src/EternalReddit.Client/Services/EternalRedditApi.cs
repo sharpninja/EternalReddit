@@ -27,6 +27,12 @@ public sealed class EternalRedditApi
         return res.IsSuccessStatusCode ? await res.Content.ReadFromJsonAsync<List<Post>>() : null;
     }
 
+    public async Task<UserProfile?> GetUserProfileAsync(string name)
+    {
+        try { return await _http.GetFromJsonAsync<UserProfile>($"api/users/{Uri.EscapeDataString(name)}"); }
+        catch { return null; }
+    }
+
     public async Task<List<TopPoster>> GetTopPostersAsync(int count = 10)
         => await _http.GetFromJsonAsync<List<TopPoster>>($"api/top-posters?count={count}") ?? new();
 

@@ -8,7 +8,7 @@
     </div>
     <div class="cmain">
         <div class="cmeta">
-            <span class="figure">@Reply.Figure</span>
+            <a class="figure" href="@($"u/{Uri.EscapeDataString(Reply.Figure)}")">@Reply.Figure</a>
             @if (Reply.Figure == "Christopher Columbus")
             {
                 <span class="achievement" title="Perpetually first to plant the flag">&#128681; Flag Planter</span>
