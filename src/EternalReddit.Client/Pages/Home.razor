@@ -8,12 +8,19 @@
 <div class="layout">
     <div class="feed-col">
         <div class="composer">
-            <input class="title-input" @bind="_title" placeholder="Title (optional)" />
+            <input class="title-input" @bind="_title" placeholder="Title" />
             <textarea class="body-input" @bind="_body" placeholder="Ask history anything..."></textarea>
             <div class="composer-actions">
                 <span class="dim">@_status</span>
                 <button class="btn" @onclick="Submit" disabled="@_posting">@(_posting ? "Posting..." : "Post")</button>
             </div>
+        </div>
+
+        <div class="sort-tabs">
+            @foreach (var s in _sorts)
+            {
+                <button class="sort-tab @(s == _sort ? "active" : "")" @onclick="() => SetSort(s)">@Cap(s)</button>
+            }
         </div>
 
         @if (_loading)
@@ -66,8 +73,11 @@
 </div>
 
 @code {
+    private static readonly string[] _sorts = { "hot", "rising", "new" };
+
     private List<Post> _feed = new();
     private IReadOnlyList<TopPoster> _topPosters = Array.Empty<TopPoster>();
+    private string _sort = "hot";
     private bool _loading = true;
     private bool _posting;
     private string? _title;
@@ -89,6 +99,14 @@
             await Load();
             await InvokeAsync(StateHasChanged);
         });
+        _hub.On<ScoreUpdate>("ScoreChanged", async u =>
+        {
+            if (u.ReplyId is null)
+            {
+                var post = _feed.FirstOrDefault(p => p.Id == u.PostId);
+                if (post is not null) { post.Upvotes = u.Upvotes; post.Downvotes = u.Downvotes; await InvokeAsync(StateHasChanged); }
+            }
+        });
         try { await _hub.StartAsync(); } catch { /* live updates are optional */ }
     }
 
@@ -100,16 +118,24 @@
     private async Task Load()
     {
         _loading = true;
-        try { _feed = await Api.GetFeedAsync(); }
+        try { _feed = await Api.GetFeedAsync(_sort); }
         catch { _status = "Couldn't load the feed."; }
         try { _topPosters = await Api.GetTopPostersAsync(); }
         catch { /* leaderboard is best-effort */ }
         _loading = false;
     }
 
+    private async Task SetSort(string sort)
+    {
+        if (_sort == sort) return;
+        _sort = sort;
+        await Load();
+    }
+
     private async Task Submit()
     {
-        if (string.IsNullOrWhiteSpace(_body)) return;
+        if (string.IsNullOrWhiteSpace(_title)) { _status = "Title is required."; return; }
+        if (string.IsNullOrWhiteSpace(_body)) { _status = "Body is required."; return; }
         _posting = true;
         _status = "";
         try
@@ -128,6 +154,7 @@
                     429 => "Slow down - 1 post per minute.",
                     403 => "You're banned.",
                     422 => "Blocked by the moderator.",
+                    400 => "Title and body are required.",
                     _ => "Log in to post."
                 };
             }
@@ -153,6 +180,8 @@
 
     private static string Snippet(string s, int max)
         => string.IsNullOrEmpty(s) ? "" : (s.Length <= max ? s : s[..max].TrimEnd() + "…");
+
+    private static string Cap(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
 
     private static string Ago(DateTime utc)
     {

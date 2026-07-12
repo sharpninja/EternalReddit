@@ -13,3 +13,6 @@ public sealed class Vote
 
 /// <summary>Result of a vote: the target's new tallies and this user's current vote ("up"/"down"/null after a toggle-off).</summary>
 public sealed record VoteResult(int Upvotes, int Downvotes, int Score, string? UserVote);
+
+/// <summary>Broadcast to all clients when a post or comment's score changes, for live updates.</summary>
+public sealed record ScoreUpdate(Guid PostId, Guid? ReplyId, int Upvotes, int Downvotes, int Score);

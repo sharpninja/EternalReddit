@@ -13,7 +13,8 @@ public static class PostEndpoints
         var group = app.MapGroup("/api/posts");
 
         // --- Anonymous reads ---
-        group.MapGet("", (IPostService svc, int? count) => Results.Ok(svc.GetRecent(count is > 0 ? count.Value : 50)));
+        group.MapGet("", (IPostService svc, int? count, string? sort) =>
+            Results.Ok(SortFeed(svc.GetRecent(200), sort).Take(count is > 0 ? count.Value : 50)));
 
         group.MapGet("/{id:guid}", (IPostService svc, Guid id) =>
             svc.Get(id) is { } post ? Results.Ok(post) : Results.NotFound());
@@ -21,6 +22,7 @@ public static class PostEndpoints
         // --- Authenticated writes ---
         group.MapPost("", async (IPostService svc, HttpContext http, CreatePostBody body, CancellationToken ct) =>
         {
+            if (string.IsNullOrWhiteSpace(body.Title)) return Results.BadRequest("Title is required.");
             if (string.IsNullOrWhiteSpace(body.Body)) return Results.BadRequest("Body is required.");
 
             var request = new CreatePostRequest(
@@ -90,6 +92,32 @@ public static class PostEndpoints
            ?? "anonymous";
 
     private static string? Nonempty(string? s) => string.IsNullOrWhiteSpace(s) ? null : s;
+
+    // Sort the feed: hot (default), rising, or new.
+    private static readonly DateTime Epoch = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+    private static IEnumerable<Post> SortFeed(IReadOnlyList<Post> posts, string? sort) => (sort ?? "hot").ToLowerInvariant() switch
+    {
+        "new" => posts.OrderByDescending(p => p.CreatedUtc),
+        "rising" => posts.OrderByDescending(Rising).ThenByDescending(p => p.CreatedUtc),
+        _ => posts.OrderByDescending(Hot).ThenByDescending(p => p.CreatedUtc),
+    };
+
+    // Reddit-style hot: log-scaled score plus a recency term.
+    private static double Hot(Post p)
+    {
+        var s = p.Score;
+        var order = Math.Log10(Math.Max(Math.Abs(s), 1));
+        var sign = s > 0 ? 1 : s < 0 ? -1 : 0;
+        return sign * order + (p.CreatedUtc - Epoch).TotalSeconds / 45000.0;
+    }
+
+    // Rising: engagement per unit age (gravity), favouring recent posts gaining traction.
+    private static double Rising(Post p)
+    {
+        var ageHours = Math.Max(0, (DateTime.UtcNow - p.CreatedUtc).TotalHours);
+        return (p.Score + p.Replies.Count) / Math.Pow(ageHours + 2, 1.5);
+    }
 
     private static bool TryParseDir(string dir, out VoteKind kind)
     {

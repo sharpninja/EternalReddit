@@ -1,41 +1,34 @@
+using System.Text;
 using System.Text.Json;
 using EternalReddit.Shared.Models;
 
 namespace EternalReddit.Server.Services.Ai;
 
-/// <summary>An AI-drafted original post before it enters the feed.</summary>
-public sealed record PostDraft(string Figure, string Title, string Body);
+/// <summary>An AI-drafted original post (title + body) before it enters the feed.</summary>
+public sealed record PostDraft(string Title, string Body);
 
-/// <summary>Turns a post (and its thread so far) into one in-character AI reply.</summary>
+/// <summary>
+/// Generates in-character comment/post text. The <b>figure is chosen by the caller</b>
+/// (only approved figures speak); the model only supplies the words.
+/// </summary>
 public interface IReplyGenerator
 {
     /// <summary>Providers that are configured and can be used, in a stable order.</summary>
     IReadOnlyList<AiProvider> Available { get; }
 
-    Task<Reply> GenerateReplyAsync(Post post, AiProvider provider, bool isBackground = false, CancellationToken ct = default);
+    /// <summary>
+    /// One comment body in <paramref name="figure"/>'s voice. When <paramref name="parentFigure"/>
+    /// is set the reply addresses them directly, given the ancestor <paramref name="branch"/>
+    /// (root → parent) for context.
+    /// </summary>
+    Task<string> GenerateReplyBodyAsync(Post post, IReadOnlyList<Reply> branch, string figure, string? parentFigure, AiProvider provider, CancellationToken ct = default);
 
-    /// <summary>Draft an original post in the voice of a figure (used when the feed goes quiet).</summary>
-    Task<PostDraft> GeneratePostAsync(AiProvider provider, CancellationToken ct = default);
+    /// <summary>An original post in <paramref name="figure"/>'s voice.</summary>
+    Task<PostDraft> GeneratePostAsync(string figure, AiProvider provider, CancellationToken ct = default);
 }
 
 public sealed class ReplyGenerator : IReplyGenerator
 {
-    private const string SystemPrompt =
-        "You write one comment in a satirical Reddit thread on r/AllOfHistory, where historical, " +
-        "legendary, and mythical figures post as contemporaries. Stay in character, grounded in the " +
-        "figure's real personality and feuds, and reply to other figures for unlikely but on-point " +
-        "crossovers. Never build humor on atrocity, genocide, slavery, or violent conquest, and do not " +
-        "feature figures whose primary legacy is such. Do not fabricate real quotes. Reply with ONLY a " +
-        "JSON object: {\"figure\":\"Name\",\"body\":\"the comment, 1-3 sentences\"}.";
-
-    private const string PostSystemPrompt =
-        "You are a historical, legendary, or mythical figure posting on r/AllOfHistory, where such " +
-        "figures post as contemporaries. Write ONE original post in character: a question, hot take, or " +
-        "wry observation about modern life or history, grounded in the figure's real personality. Never " +
-        "build humor on atrocity, genocide, slavery, or violent conquest, and do not feature figures whose " +
-        "primary legacy is such. Do not fabricate real quotes. Reply with ONLY a JSON object: " +
-        "{\"figure\":\"Name\",\"title\":\"a short title\",\"body\":\"1-3 sentences\"}.";
-
     private readonly IReadOnlyDictionary<AiProvider, IAiProvider> _providers;
 
     public ReplyGenerator(IEnumerable<IAiProvider> providers)
@@ -47,64 +40,69 @@ public sealed class ReplyGenerator : IReplyGenerator
 
     public IReadOnlyList<AiProvider> Available { get; }
 
-    public async Task<Reply> GenerateReplyAsync(Post post, AiProvider provider, bool isBackground = false, CancellationToken ct = default)
+    public async Task<string> GenerateReplyBodyAsync(Post post, IReadOnlyList<Reply> branch, string figure, string? parentFigure, AiProvider provider, CancellationToken ct = default)
     {
-        if (!_providers.TryGetValue(provider, out var ai))
-            throw new InvalidOperationException($"Provider {provider} is not configured.");
-
-        var text = await ai.CompleteAsync(SystemPrompt, BuildUserPrompt(post), 400, ct);
-        var (figure, body) = ParseReply(text);
-
-        return new Reply
-        {
-            Figure = figure,
-            Provider = provider,
-            Body = body,
-            IsBackground = isBackground,
-            CreatedUtc = DateTime.UtcNow
-        };
+        var ai = Resolve(provider);
+        var text = await ai.CompleteAsync(ReplySystem(figure, parentFigure), BuildBranchPrompt(post, branch, figure, parentFigure), 400, ct);
+        return CleanText(text);
     }
 
-    private static string BuildUserPrompt(Post post)
+    public async Task<PostDraft> GeneratePostAsync(string figure, AiProvider provider, CancellationToken ct = default)
     {
-        var thread = string.Join("\n", post.Replies.Select(r => $"{r.Figure}: {r.Body}"));
-        var header = string.IsNullOrWhiteSpace(post.Title) ? post.Body : $"{post.Title}\n{post.Body}";
-        return thread.Length == 0
-            ? $"POST: {header}\n\nWrite the first comment."
-            : $"POST: {header}\n\nComments so far:\n{thread}\n\nWrite the next comment as a different figure.";
+        var ai = Resolve(provider);
+        var system =
+            $"You are {figure}, writing an original post on r/AllOfHistory, where historical, legendary, and " +
+            "mythical figures post as contemporaries. Write a short post in character - a question, hot take, " +
+            $"or wry observation - grounded in {figure}'s real personality and era. Never build humor on " +
+            "atrocity, genocide, slavery, or violent conquest. Do not fabricate real quotes. Reply with ONLY " +
+            "a JSON object: {\"title\":\"a short title\",\"body\":\"1-3 sentences\"}.";
+        return ParsePost(await ai.CompleteAsync(system, "Write your post now.", 400, ct));
     }
 
-    private static (string Figure, string Body) ParseReply(string text)
+    private IAiProvider Resolve(AiProvider provider)
+        => _providers.TryGetValue(provider, out var ai) ? ai
+            : throw new InvalidOperationException($"Provider {provider} is not configured.");
+
+    private static string ReplySystem(string figure, string? parentFigure)
+        => $"You are {figure}, commenting on r/AllOfHistory, where historical, legendary, and mythical figures " +
+           $"talk as contemporaries. Stay in character, grounded in {figure}'s real personality, era, and " +
+           "rivalries. " +
+           (parentFigure is null
+               ? "Write a top-level comment on the post. "
+               : $"You are replying directly to {parentFigure}: address them by name and respond to what they " +
+                 "actually said, building on the whole conversation above. ") +
+           "Keep it to 1-3 sentences. Never build humor on atrocity, genocide, slavery, or violent conquest. " +
+           "Do not fabricate real quotes. Reply with ONLY your comment text - no name label, no surrounding quotes, no JSON.";
+
+    private static string BuildBranchPrompt(Post post, IReadOnlyList<Reply> branch, string figure, string? parentFigure)
     {
-        var trimmed = (text ?? "").Replace("```json", "").Replace("```", "").Trim();
-        var start = trimmed.IndexOf('{');
-        var end = trimmed.LastIndexOf('}');
-        if (start >= 0 && end > start)
+        var sb = new StringBuilder();
+        sb.Append("POST: ").Append(string.IsNullOrWhiteSpace(post.Title) ? post.Body : $"{post.Title}\n{post.Body}").Append('\n');
+        if (branch.Count > 0)
         {
-            try
-            {
-                using var doc = JsonDocument.Parse(trimmed[start..(end + 1)]);
-                var root = doc.RootElement;
-                var figure = root.TryGetProperty("figure", out var f) ? f.GetString() : null;
-                var body = root.TryGetProperty("body", out var b) ? b.GetString() : null;
-                if (!string.IsNullOrWhiteSpace(body))
-                    return (string.IsNullOrWhiteSpace(figure) ? "A Historical Figure" : figure!, body!);
-            }
-            catch (JsonException)
-            {
-                // fall through to plain-text handling
-            }
+            sb.Append("\nConversation so far (oldest first):\n");
+            foreach (var r in branch)
+                sb.Append(r.Figure).Append(": ").Append(r.Body).Append('\n');
+            sb.Append($"\nNow write {figure}'s reply to {parentFigure}.");
         }
-        return ("A Historical Figure", string.IsNullOrWhiteSpace(text) ? "" : text.Trim());
+        else
+        {
+            sb.Append($"\nWrite {figure}'s comment on this post.");
+        }
+        return sb.ToString();
     }
 
-    public async Task<PostDraft> GeneratePostAsync(AiProvider provider, CancellationToken ct = default)
+    private static string CleanText(string text)
     {
-        if (!_providers.TryGetValue(provider, out var ai))
-            throw new InvalidOperationException($"Provider {provider} is not configured.");
-
-        var text = await ai.CompleteAsync(PostSystemPrompt, "Write your original post now.", 400, ct);
-        return ParsePost(text);
+        var t = (text ?? "").Trim();
+        if (t.StartsWith("{") && t.Contains("\"body\""))
+        {
+            try { using var d = JsonDocument.Parse(t); if (d.RootElement.TryGetProperty("body", out var b)) t = b.GetString() ?? t; }
+            catch { /* not JSON, use as-is */ }
+        }
+        t = t.Trim();
+        if (t.Length >= 2 && t[0] == '"' && t[^1] == '"') t = t[1..^1].Trim();
+        return t;
     }
 
     private static PostDraft ParsePost(string text)
@@ -118,20 +116,13 @@ public sealed class ReplyGenerator : IReplyGenerator
             {
                 using var doc = JsonDocument.Parse(trimmed[start..(end + 1)]);
                 var root = doc.RootElement;
-                var figure = root.TryGetProperty("figure", out var f) ? f.GetString() : null;
                 var title = root.TryGetProperty("title", out var t) ? t.GetString() : null;
                 var body = root.TryGetProperty("body", out var b) ? b.GetString() : null;
                 if (!string.IsNullOrWhiteSpace(body))
-                    return new PostDraft(
-                        string.IsNullOrWhiteSpace(figure) ? "A Historical Figure" : figure!,
-                        string.IsNullOrWhiteSpace(title) ? "" : title!,
-                        body!);
+                    return new PostDraft(string.IsNullOrWhiteSpace(title) ? "Untitled" : title!, body!);
             }
-            catch (JsonException)
-            {
-                // fall through to plain-text handling
-            }
+            catch (JsonException) { /* fall through */ }
         }
-        return new PostDraft("A Historical Figure", "", string.IsNullOrWhiteSpace(text) ? "" : text.Trim());
+        return new PostDraft("Untitled", string.IsNullOrWhiteSpace(text) ? "" : text.Trim());
     }
 }

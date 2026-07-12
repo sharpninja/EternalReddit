@@ -87,27 +87,24 @@ public class ReplyGeneratorTests
     private static Post SamplePost() => new() { Title = "Best feuds?", Body = "Who had the pettiest rivalry?" };
 
     [Fact]
-    public async Task Parses_figure_and_body_from_json()
+    public async Task Reply_body_is_unwrapped_from_any_json()
     {
         var gen = new ReplyGenerator(new[]
         {
-            new FakeAiProvider(AiProvider.Claude, "{\"figure\":\"Isaac Newton\",\"body\":\"Calculus was mine first.\"}")
+            new FakeAiProvider(AiProvider.Claude, "{\"figure\":\"whatever\",\"body\":\"Calculus was mine first.\"}")
         });
 
-        var reply = await gen.GenerateReplyAsync(SamplePost(), AiProvider.Claude);
+        var body = await gen.GenerateReplyBodyAsync(SamplePost(), Array.Empty<Reply>(), "Isaac Newton", null, AiProvider.Claude);
 
-        Assert.Equal("Isaac Newton", reply.Figure);
-        Assert.Equal("Calculus was mine first.", reply.Body);
-        Assert.Equal(AiProvider.Claude, reply.Provider);
+        Assert.Equal("Calculus was mine first.", body);
     }
 
     [Fact]
-    public async Task Falls_back_when_response_is_not_json()
+    public async Task Plain_text_reply_is_returned_as_is()
     {
         var gen = new ReplyGenerator(new[] { new FakeAiProvider(AiProvider.OpenAI, "just some prose") });
-        var reply = await gen.GenerateReplyAsync(SamplePost(), AiProvider.OpenAI);
-        Assert.Equal("just some prose", reply.Body);
-        Assert.False(string.IsNullOrEmpty(reply.Figure));
+        var body = await gen.GenerateReplyBodyAsync(SamplePost(), Array.Empty<Reply>(), "Ada Lovelace", null, AiProvider.OpenAI);
+        Assert.Equal("just some prose", body);
     }
 
     [Fact]

@@ -35,12 +35,21 @@
                     <span>@_post.Replies.Count comments</span>
                     <button class="link" @onclick="Share">Share@(_shareMsg >= 0 ? $" · {_shareMsg}" : "")</button>
                 </div>
-                <div class="comments">
-                    @if (TopLevel(_post).Any())
+
+                <div class="sort-tabs comments-sort">
+                    @foreach (var s in _sorts)
                     {
-                        @foreach (var top in TopLevel(_post))
+                        <button class="sort-tab @(s == _sort ? "active" : "")" @onclick="() => _sort = s">@Cap(s)</button>
+                    }
+                </div>
+
+                <div class="comments">
+                    @{ var tops = CommentView.Order(_post.Replies.Where(r => r.ParentReplyId is null), _sort).ToList(); }
+                    @if (tops.Count > 0)
+                    {
+                        @foreach (var top in tops)
                         {
-                            <CommentView Reply="top" All="_post.Replies" PostId="_post.Id" OnVoted="StateHasChanged" />
+                            <CommentView Reply="top" All="_post.Replies" PostId="_post.Id" Sort="_sort" OnVoted="StateHasChanged" />
                         }
                     }
                     else
@@ -54,8 +63,11 @@
 </div>
 
 @code {
+    private static readonly string[] _sorts = { "hot", "rising", "new" };
+
     [Parameter] public Guid Id { get; set; }
     private Post? _post;
+    private string _sort = "hot";
     private bool _loading = true;
     private int _shareMsg = -1;
     private HubConnection? _hub;
@@ -71,6 +83,21 @@
         _hub.On("FeedChanged", async () =>
         {
             await LoadPost();
+            await InvokeAsync(StateHasChanged);
+        });
+        _hub.On<ScoreUpdate>("ScoreChanged", async u =>
+        {
+            if (_post is null || u.PostId != _post.Id) return;
+            if (u.ReplyId is null)
+            {
+                _post.Upvotes = u.Upvotes;
+                _post.Downvotes = u.Downvotes;
+            }
+            else
+            {
+                var r = _post.Replies.FirstOrDefault(x => x.Id == u.ReplyId);
+                if (r is not null) { r.Upvotes = u.Upvotes; r.Downvotes = u.Downvotes; }
+            }
             await InvokeAsync(StateHasChanged);
         });
         try { await _hub.StartAsync(); } catch { /* live updates are optional */ }
@@ -102,7 +129,7 @@
         _shareMsg = c < 0 ? 0 : c;
     }
 
-    private static IEnumerable<Reply> TopLevel(Post p) => p.Replies.Where(r => r.ParentReplyId is null);
+    private static string Cap(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
 
     private static string Ago(DateTime utc)
     {

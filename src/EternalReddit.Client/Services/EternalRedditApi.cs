@@ -9,8 +9,8 @@ public sealed class EternalRedditApi
     private readonly HttpClient _http;
     public EternalRedditApi(HttpClient http) => _http = http;
 
-    public async Task<List<Post>> GetFeedAsync(int count = 50)
-        => await _http.GetFromJsonAsync<List<Post>>($"api/posts?count={count}") ?? new();
+    public async Task<List<Post>> GetFeedAsync(string sort = "hot", int count = 50)
+        => await _http.GetFromJsonAsync<List<Post>>($"api/posts?sort={sort}&count={count}") ?? new();
 
     public async Task<Post?> GetPostAsync(Guid id)
     {

@@ -1,12 +1,11 @@
 using EternalReddit.Server.Data;
 using EternalReddit.Server.Services.Ai;
-using EternalReddit.Server.Services.Moderation;
 
 namespace EternalReddit.Server.Services;
 
 /// <summary>
 /// Every 10 seconds, picks a recently-active-but-quiet thread and adds one
-/// moderated AI reply from a rotating provider, keeping the feed alive.
+/// moderated, approved-figure reply, keeping conversations going.
 /// </summary>
 public sealed class AutoReplyBackgroundService : BackgroundService
 {
@@ -15,22 +14,22 @@ public sealed class AutoReplyBackgroundService : BackgroundService
     private static readonly TimeSpan ActiveWithin = TimeSpan.FromMinutes(30);
 
     private readonly IPostStore _posts;
+    private readonly IPostService _service;
     private readonly IReplyGenerator _generator;
-    private readonly IModerator _moderator;
     private readonly IFeedNotifier _notifier;
     private readonly ILogger<AutoReplyBackgroundService> _log;
     private readonly RoundRobinSelector? _rotation;
 
     public AutoReplyBackgroundService(
         IPostStore posts,
+        IPostService service,
         IReplyGenerator generator,
-        IModerator moderator,
         IFeedNotifier notifier,
         ILogger<AutoReplyBackgroundService> log)
     {
         _posts = posts;
+        _service = service;
         _generator = generator;
-        _moderator = moderator;
         _notifier = notifier;
         _log = log;
         _rotation = generator.Available.Count > 0 ? new RoundRobinSelector(generator.Available) : null;
@@ -67,20 +66,11 @@ public sealed class AutoReplyBackgroundService : BackgroundService
         var thread = AutoReplySelector.SelectThread(_posts.GetRecent(20), DateTime.UtcNow, QuietFor, ActiveWithin);
         if (thread is null) return;
 
-        var reply = await _generator.GenerateReplyAsync(thread, _rotation!.Next(), isBackground: true, ct);
+        var reply = await _service.GenerateReplyInto(thread, _rotation!.Next(), ct);
+        if (reply is null) return;
 
-        // Background replies are moderated too (Open Question 7: yes).
-        var outcome = await _moderator.ReviewAsync(reply.Body, ct);
-        if (!outcome.IsAllowed)
-        {
-            _log.LogInformation("Background reply blocked: {Verdict}", outcome.Verdict);
-            return;
-        }
-
-        PostService.ThreadUnder(thread.Replies, reply, 60);
-        thread.Replies.Add(reply);
+        reply.IsBackground = true;
         _posts.Update(thread);
         await _notifier.FeedChangedAsync();
-        _log.LogInformation("Background reply added to post {PostId} via {Provider}", thread.Id, reply.Provider);
     }
 }

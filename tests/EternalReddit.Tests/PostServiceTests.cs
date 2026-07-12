@@ -153,21 +153,17 @@ public class PostServiceTests
     }
 
     [Fact]
-    public void ThreadUnder_nests_a_reply_beneath_an_existing_non_scripted_comment()
+    public void BranchTo_returns_the_ancestor_chain_root_to_parent()
     {
-        var existing = new List<Reply>
-        {
-            new() { Figure = "Columbus", Provider = AiProvider.Scripted }, // never a parent
-            new() { Figure = "Newton", Provider = AiProvider.Claude }
-        };
+        var root = new Reply { Figure = "Newton" };
+        var mid = new Reply { Figure = "Ada", ParentReplyId = root.Id };
+        var leaf = new Reply { Figure = "Tesla", ParentReplyId = mid.Id };
+        var all = new List<Reply> { root, mid, leaf };
 
-        var nested = new Reply { Figure = "Ada" };
-        PostService.ThreadUnder(existing, nested, 100);
-        Assert.Equal(existing[1].Id, nested.ParentReplyId); // Newton, not scripted Columbus
+        var branch = PostService.BranchTo(all, leaf);
 
-        var topLevel = new Reply { Figure = "Ada" };
-        PostService.ThreadUnder(existing, topLevel, 0);
-        Assert.Null(topLevel.ParentReplyId);
+        Assert.Equal(new[] { "Newton", "Ada", "Tesla" }, branch.Select(r => r.Figure).ToArray());
+        Assert.Empty(PostService.BranchTo(all, null));
     }
 
     [Fact]

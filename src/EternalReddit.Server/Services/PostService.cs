@@ -26,6 +26,9 @@ public interface IPostService
 
     /// <summary>Create an original post authored by a character (no rate limit); returns null if moderation blocks it.</summary>
     Task<Post?> CreateSystemPostAsync(string authorName, string? title, string body, CancellationToken ct = default);
+
+    /// <summary>Generate and thread one approved-figure reply into a post; returns it, or null if blocked/failed.</summary>
+    Task<Reply?> GenerateReplyInto(Post post, AiProvider provider, CancellationToken ct = default);
     VoteResult? Vote(Guid postId, Guid? replyId, string userId, VoteKind kind);
     int Share(Guid postId, Guid? replyId);
     IReadOnlyList<Post> GetRecent(int count = 50);
@@ -222,21 +225,25 @@ public sealed class PostService : IPostService
         }
 
         _posts.Update(post);
-        return new VoteResult(upvotes(), downvotes(), upvotes() - downvotes(), userVote);
+
+        var result = new VoteResult(upvotes(), downvotes(), upvotes() - downvotes(), userVote);
+        _ = _notifier.ScoreChangedAsync(new ScoreUpdate(postId, replyId, result.Upvotes, result.Downvotes, result.Score));
+        return result;
     }
 
     private static string Label(VoteKind kind) => kind == VoteKind.Up ? "up" : "down";
 
-    /// <summary>
-    /// With <paramref name="percentChance"/>%, nest this reply under an existing
-    /// non-scripted comment so the thread reads like Reddit (figure-to-figure
-    /// crossovers); otherwise it stays top-level.
-    /// </summary>
-    public static void ThreadUnder(IReadOnlyList<Reply> existing, Reply reply, int percentChance)
+    /// <summary>The ancestor chain from the root comment down to <paramref name="parent"/> (inclusive, oldest first).</summary>
+    public static IReadOnlyList<Reply> BranchTo(IReadOnlyList<Reply> all, Reply? parent)
     {
-        var parents = existing.Where(r => r.Provider != AiProvider.Scripted).ToList();
-        if (parents.Count > 0 && Random.Shared.Next(100) < percentChance)
-            reply.ParentReplyId = parents[Random.Shared.Next(parents.Count)].Id;
+        if (parent is null) return Array.Empty<Reply>();
+        var byId = all.ToDictionary(r => r.Id);
+        var chain = new List<Reply>();
+        for (var cur = parent; cur is not null;
+             cur = cur.ParentReplyId is { } pid && byId.TryGetValue(pid, out var p) ? p : null)
+            chain.Add(cur);
+        chain.Reverse();
+        return chain;
     }
 
     public int Share(Guid postId, Guid? replyId)
@@ -266,34 +273,56 @@ public sealed class PostService : IPostService
 
         var rotation = new RoundRobinSelector(_generator.Available);
         for (var i = 0; i < ReplyCount; i++)
-        {
-            var provider = rotation.Next();
-            try
-            {
-                var reply = await _generator.GenerateReplyAsync(post, provider, isBackground: false, ct);
-
-                var outcome = await _moderator.ReviewAsync(reply.Body, ct);
-                LogDecision(TargetKind.Reply, reply.Body, outcome, userId: null, ip: post.AuthorIp);
-                if (outcome.IsAllowed)
-                {
-                    ThreadUnder(post.Replies, reply, 55);
-                    post.Replies.Add(reply);
-                    _logger.LogInformation("{Figure} commented via {Provider}", reply.Figure, provider);
-                }
-                else
-                {
-                    _logger.LogWarning("Reply from {Provider} blocked: {Verdict}", provider, outcome.Verdict);
-                }
-            }
-            catch (Exception ex)
-            {
-                // A single provider hiccup (rate limit, transient 5xx, bad JSON) must not
-                // fail the user's post.
-                _logger.LogError(ex, "Reply generation via {Provider} failed", provider);
-            }
-        }
+            await GenerateReplyInto(post, rotation.Next(), ct);
 
         _posts.Update(post);
+    }
+
+    public async Task<Reply?> GenerateReplyInto(Post post, AiProvider provider, CancellationToken ct = default)
+    {
+        // Decide the parent first so the reply can address it with full branch context,
+        // and pick the speaking figure from the approved cast (never the model's choice).
+        var parent = PickParent(post.Replies);
+        var figure = Figures.Pick(exclude: parent?.Figure);
+        var branch = BranchTo(post.Replies, parent);
+        try
+        {
+            var body = await _generator.GenerateReplyBodyAsync(post, branch, figure, parent?.Figure, provider, ct);
+
+            var outcome = await _moderator.ReviewAsync(body, ct);
+            LogDecision(TargetKind.Reply, body, outcome, userId: null, ip: post.AuthorIp);
+            if (!outcome.IsAllowed)
+            {
+                _logger.LogWarning("Reply from {Provider} blocked: {Verdict}", provider, outcome.Verdict);
+                return null;
+            }
+
+            var reply = new Reply
+            {
+                Figure = figure,
+                Provider = provider,
+                Body = body,
+                ParentReplyId = parent?.Id,
+                CreatedUtc = DateTime.UtcNow
+            };
+            post.Replies.Add(reply);
+            _logger.LogInformation("{Figure} replied to {Parent} via {Provider}", figure, parent?.Figure ?? "the post", provider);
+            return reply;
+        }
+        catch (Exception ex)
+        {
+            // A single provider hiccup must not fail the caller.
+            _logger.LogError(ex, "Reply generation via {Provider} failed", provider);
+            return null;
+        }
+    }
+
+    // ~55% of replies nest under an existing (non-scripted) comment, else top-level.
+    private static Reply? PickParent(IReadOnlyList<Reply> replies)
+    {
+        var candidates = replies.Where(r => r.Provider != AiProvider.Scripted).ToList();
+        if (candidates.Count == 0) return null;
+        return Random.Shared.Next(100) < 55 ? candidates[Random.Shared.Next(candidates.Count)] : null;
     }
 
     private void Ban(string userId, string name, string ip, ModerationVerdict verdict)

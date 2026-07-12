@@ -18,7 +18,7 @@
         <div class="ctext">@Reply.Body</div>
         @foreach (var child in Children)
         {
-            <CommentView Reply="child" All="All" PostId="PostId" OnVoted="OnVoted" />
+            <CommentView Reply="child" All="All" PostId="PostId" Sort="Sort" OnVoted="OnVoted" />
         }
     </div>
 </div>
@@ -27,13 +27,22 @@
     [Parameter, EditorRequired] public Reply Reply { get; set; } = default!;
     [Parameter] public IReadOnlyList<Reply> All { get; set; } = Array.Empty<Reply>();
     [Parameter] public Guid PostId { get; set; }
+    [Parameter] public string Sort { get; set; } = "hot";
 
     /// <summary>Raised after a comment vote so the parent can refresh the karma leaderboard.</summary>
     [Parameter] public EventCallback OnVoted { get; set; }
 
     [Inject] public EternalRedditApi Api { get; set; } = default!;
 
-    private IEnumerable<Reply> Children => All.Where(r => r.ParentReplyId == Reply.Id);
+    private IEnumerable<Reply> Children => Order(All.Where(r => r.ParentReplyId == Reply.Id), Sort);
+
+    /// <summary>Order comments: hot (score), rising (score per age), or new.</summary>
+    public static IEnumerable<Reply> Order(IEnumerable<Reply> replies, string sort) => sort switch
+    {
+        "new" => replies.OrderByDescending(r => r.CreatedUtc),
+        "rising" => replies.OrderByDescending(r => r.Score / Math.Pow(Math.Max(0, (DateTime.UtcNow - r.CreatedUtc).TotalHours) + 2, 1.2)).ThenByDescending(r => r.CreatedUtc),
+        _ => replies.OrderByDescending(r => r.Score).ThenBy(r => r.CreatedUtc),
+    };
 
     private async Task Vote(string dir)
     {

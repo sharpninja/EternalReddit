@@ -177,3 +177,13 @@ table.logs tr:first-child td { border-top: none; }
 /* ---- post detail page ---- */
 .postpage { max-width: 680px; margin: 0 auto; }
 .postpage .back { display: inline-block; margin-bottom: 12px; font-size: 0.85rem; }
+
+/* ---- sort tabs (feed + comments) ---- */
+.sort-tabs { display: flex; gap: 6px; margin: 0 0 12px; }
+.comments-sort { margin: 12px 0 4px; }
+.sort-tab {
+    background: var(--card); border: 1px solid var(--line); color: var(--dim);
+    font-weight: 700; font-size: 0.78rem; padding: 5px 12px; border-radius: 999px; cursor: pointer;
+}
+.sort-tab:hover { color: var(--ink); }
+.sort-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }

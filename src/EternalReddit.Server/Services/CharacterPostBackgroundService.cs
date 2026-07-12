@@ -62,9 +62,10 @@ public sealed class CharacterPostBackgroundService : BackgroundService
         var latest = _posts.GetRecent(1).FirstOrDefault();
         if (latest is not null && DateTime.UtcNow - latest.CreatedUtc < Quiet) return;
 
-        var draft = await _generator.GeneratePostAsync(_rotation!.Next(), ct);
-        var post = await _service.CreateSystemPostAsync(draft.Figure, draft.Title, draft.Body, ct);
+        var figure = Figures.Pick();
+        var draft = await _generator.GeneratePostAsync(figure, _rotation!.Next(), ct);
+        var post = await _service.CreateSystemPostAsync(figure, draft.Title, draft.Body, ct);
         if (post is not null)
-            _log.LogInformation("{Figure} started an original post after a quiet hour", draft.Figure);
+            _log.LogInformation("{Figure} started an original post after a quiet hour", figure);
     }
 }
