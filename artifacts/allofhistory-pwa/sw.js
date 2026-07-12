@@ -1,4 +1,5 @@
-const CACHE_NAME = "allofhistory-v1";
+const CACHE_NAME = "allofhistory-v2";
+const API_HOSTS = ["api.anthropic.com", "api.openai.com", "api.x.ai"];
 const SHELL_ASSETS = [
   "./",
   "./index.html",
@@ -26,8 +27,8 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
-  // Never cache API calls — always go to network for live-generated content.
-  if (url.hostname === "api.anthropic.com") {
+  // Never cache LLM API calls - always go straight to network for live content.
+  if (API_HOSTS.includes(url.hostname)) {
     return;
   }
 
