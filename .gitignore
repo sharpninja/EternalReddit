@@ -56,3 +56,11 @@ coverage/
 # Packaging artifacts (source zips extracted into repo)
 *.zip
 *.tar.gz
+
+# MCP Server workspace local state (managed by the server, not source)
+AGENTS-README-FIRST.yaml
+.mcpServer/
+cache/
+mcp.db
+docs/todo.yaml
+docs/wiki.yaml
