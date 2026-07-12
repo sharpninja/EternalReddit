@@ -109,14 +109,20 @@
   </div>
 
   <div class="keybox">
-    <div class="klabel">API Keys (round-robin)</div>
+    <div class="klabel">Proxy URL (optional, recommended)</div>
+    <div class="keyrow"><span class="tag" style="color:var(--amber)">Proxy</span><input id="proxyUrl" type="text" placeholder="https://your-worker.workers.dev" autocomplete="off"></div>
+    <div class="note" style="margin-bottom:14px">
+      Point this at your deployed Cloudflare Worker (see <code>proxy/README.md</code>) to run the round-robin server-side.
+      When set, the keys below are ignored, visitors need no keys of their own, and Grok's CORS problem goes away.
+    </div>
+    <div class="klabel">API Keys (direct mode - used only when no Proxy URL is set)</div>
     <div class="keyrow grok"><span class="tag">Grok</span><input id="keyGrok" type="password" placeholder="xai-..." autocomplete="off"></div>
     <div class="keyrow claude"><span class="tag">Claude</span><input id="keyClaude" type="password" placeholder="sk-ant-..." autocomplete="off"></div>
     <div class="keyrow chatgpt"><span class="tag">ChatGPT</span><input id="keyOpenai" type="password" placeholder="sk-..." autocomplete="off"></div>
     <div class="note">
       Keys are stored only in this browser (localStorage) and sent only to each provider's own API.
       Enter at least one; comments round-robin across whichever keys you provide.
-      Note: Claude and ChatGPT allow direct browser calls; Grok (xAI) may be blocked by CORS and could need a small proxy.
+      Direct browser calls: Claude and ChatGPT work; Grok (xAI) is often CORS-blocked - use the proxy above for Grok.
     </div>
   </div>
 
@@ -132,7 +138,7 @@
   </div>
 
   <div id="feed">
-    <div class="empty" id="emptyState">no threads yet - add at least one API key and submit a prompt to start one</div>
+    <div class="empty" id="emptyState">no threads yet - set a Proxy URL (or add at least one API key) and submit a prompt to start one</div>
   </div>
 </div>
 
@@ -170,16 +176,35 @@ const statusMsg = document.getElementById("statusMsg");
 const feed = document.getElementById("feed");
 const emptyState = document.getElementById("emptyState");
 
-// ---- key persistence ----
+// ---- key + proxy persistence ----
 PROVIDERS.forEach(p => {
   const el = document.getElementById(p.keyEl);
   el.value = localStorage.getItem(p.store) || "";
   el.addEventListener("change", () => localStorage.setItem(p.store, el.value.trim()));
 });
-function activeProviders(){
+const proxyEl = document.getElementById("proxyUrl");
+proxyEl.value = localStorage.getItem("aoh_proxy_url") || "";
+proxyEl.addEventListener("change", () => localStorage.setItem("aoh_proxy_url", proxyEl.value.trim()));
+function proxyBase(){ const v = (proxyEl.value || "").trim(); return v ? v.replace(/\/+$/, "") : ""; }
+
+function activeKeyProviders(){
   return PROVIDERS
     .map(p => ({ ...p, key: (document.getElementById(p.keyEl).value || "").trim() }))
     .filter(p => p.key);
+}
+// Resolve the rotation: proxy mode (server holds keys) or direct key mode.
+async function resolveProviders(){
+  const base = proxyBase();
+  if (base){
+    const r = await fetch(base + "/providers");
+    if (!r.ok) throw new Error("proxy /providers returned " + r.status);
+    const d = await r.json();
+    return (d.providers || [])
+      .map(id => PROVIDERS.find(p => p.id === id))
+      .filter(Boolean)
+      .map(p => ({ ...p, proxy: base }));
+  }
+  return activeKeyProviders();
 }
 
 // ---- helpers ----
@@ -207,6 +232,17 @@ function parseJson(text){
 
 async function callProvider(p, system, user, maxTokens){
   let res;
+  if (p.proxy){
+    res = await fetch(p.proxy + "/chat", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ provider: p.id, system, user, max_tokens: maxTokens })
+    });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(p.name + " " + res.status + ": " + String(d.error || "").slice(0,180));
+    if (!d.text) throw new Error(p.name + ": empty proxy response");
+    return d.text;
+  }
   if (p.kind === "anthropic"){
     res = await fetch(p.endpoint, {
       method:"POST",
@@ -315,14 +351,22 @@ function clearTyping(){ const t = document.getElementById("typingNow"); if (t) t
 // ---- main flow ----
 async function generate(){
   errorMsg.style.display = "none"; errorMsg.textContent = "";
-  const providers = activeProviders();
   const prompt = promptInput.value.trim();
+  if (!prompt) return;
 
-  if (!providers.length){
-    errorMsg.textContent = "Add at least one API key (Grok, Claude, or ChatGPT) above.";
+  let providers;
+  try {
+    providers = await resolveProviders();
+  } catch (e){
+    errorMsg.textContent = "Proxy error: " + e.message + " (check the Proxy URL, or clear it to use direct keys).";
     errorMsg.style.display = "block"; return;
   }
-  if (!prompt) return;
+  if (!providers.length){
+    errorMsg.textContent = proxyBase()
+      ? "The proxy has no providers configured. Set at least one key with `wrangler secret put`."
+      : "Add at least one API key (Grok, Claude, or ChatGPT) above, or set a Proxy URL.";
+    errorMsg.style.display = "block"; return;
+  }
 
   postBtn.disabled = true; postBtn.textContent = "...";
   emptyState.style.display = "none";
