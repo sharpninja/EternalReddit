@@ -10,14 +10,27 @@ public static class Figures
 {
     public static readonly IReadOnlyList<string> Approved = new[]
     {
-        "Isaac Newton", "Albert Einstein", "Nikola Tesla", "Marie Curie",
-        "Charles Darwin", "Galileo Galilei", "Ada Lovelace", "Alan Turing",
-        "Michael Faraday", "Louis Pasteur", "Rosalind Franklin", "Grace Hopper",
-        "Katherine Johnson", "Hypatia", "Socrates", "Plato", "Aristotle",
-        "Confucius", "Immanuel Kant", "Simone de Beauvoir", "Leonardo da Vinci",
-        "William Shakespeare", "Jane Austen", "Mary Shelley", "Mark Twain",
-        "Frida Kahlo", "Vincent van Gogh", "Amelia Earhart", "Benjamin Franklin",
-        "Mary Somerville", "Émilie du Châtelet",
+        // Artists & composers
+        "William Shakespeare", "Leonardo da Vinci", "Wolfgang Amadeus Mozart",
+        "Johann Sebastian Bach", "Ludwig van Beethoven",
+        // Scientists & inventors
+        "Isaac Newton", "Albert Einstein", "Nikola Tesla", "Alexander Graham Bell",
+        "Erwin Schrödinger", "Benjamin Franklin",
+        // Philosophers & antiquity
+        "Socrates", "Plato", "Sun Tzu", "Julius Caesar", "Cleopatra",
+        // Rulers, leaders & the frontier
+        "Joan of Arc", "Elizabeth I", "Robert E. Lee", "Ulysses S. Grant",
+        "Hiawatha", "Sam Houston", "Theodore Roosevelt", "Neville Chamberlain",
+        // Generals
+        "George S. Patton", "Bernard Montgomery", "Erwin Rommel", "Douglas MacArthur",
+        // Writers
+        "Geoffrey Chaucer", "Edgar Allan Poe", "Herman Melville", "Mark Twain",
+        "Ernest Hemingway", "J.R.R. Tolkien",
+        // Music
+        "Elvis Presley",
+        // Legendary / mythical (not historical people)
+        "Beowulf", "King Arthur", "Lancelot", "Morgan le Fay", "Merlin",
+        // 20th-century figures
         "Ronald Reagan", "Mahatma Gandhi", "John Wayne", "George Lucas",
         "Mick Jagger", "David Bowie"
     };
