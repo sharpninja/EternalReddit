@@ -187,3 +187,20 @@ table.logs tr:first-child td { border-top: none; }
 }
 .sort-tab:hover { color: var(--ink); }
 .sort-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* ---- share "copied" bubble ---- */
+.copied-bubble {
+    display: inline-block; margin-left: 8px; background: var(--ink); color: var(--card);
+    font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+}
+
+/* ---- Columbus "Flag Planter" achievement ---- */
+.achievement {
+    display: inline-block; margin-left: 6px; font-size: 0.62rem; font-weight: 700;
+    color: #9a6b00; background: #fff4d6; border: 1px solid #e8cf8a;
+    padding: 0 6px; border-radius: 3px; text-transform: uppercase;
+}
+
+/* ---- profile ---- */
+.profile-head { margin-bottom: 14px; }
+.profile-name { margin: 0; font-size: 1.3rem; }

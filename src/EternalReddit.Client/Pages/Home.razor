@@ -2,6 +2,7 @@
 @implements IAsyncDisposable
 @inject EternalRedditApi Api
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 
 <PageTitle>r/AllOfHistory</PageTitle>
 
@@ -59,9 +60,11 @@
 
                         <div class="pactions">
                             <a class="link expand" href="@($"p/{post.Id}")">&#128172; @post.Replies.Count comments &rsaquo;</a>
-                            <button class="link" @onclick="() => Share(post)">
-                                Share@(_shareMsg.TryGetValue(post.Id, out var m) ? $" · {m}" : "")
-                            </button>
+                            <button class="link" @onclick="() => Share(post)">Share</button>
+                            @if (_copied.Contains(post.Id))
+                            {
+                                <span class="copied-bubble">Link copied!</span>
+                            }
                         </div>
                     </div>
                 </div>
@@ -83,7 +86,7 @@
     private string? _title;
     private string _body = "";
     private string _status = "";
-    private readonly Dictionary<Guid, int> _shareMsg = new();
+    private readonly HashSet<Guid> _copied = new();
     private HubConnection? _hub;
 
     protected override async Task OnInitializedAsync()
@@ -171,8 +174,14 @@
 
     private async Task Share(Post post)
     {
-        var count = await Api.SharePostAsync(post.Id);
-        _shareMsg[post.Id] = count < 0 ? 0 : count;
+        var url = Nav.ToAbsoluteUri($"p/{post.Id}").ToString();
+        try { await JS.InvokeVoidAsync("navigator.clipboard.writeText", url); } catch { /* clipboard may be blocked */ }
+        _ = Api.SharePostAsync(post.Id);
+        _copied.Add(post.Id);
+        StateHasChanged();
+        await Task.Delay(1800);
+        _copied.Remove(post.Id);
+        StateHasChanged();
     }
 
     private static Reply? TopComment(Post p)

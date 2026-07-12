@@ -2,6 +2,7 @@
 @implements IAsyncDisposable
 @inject EternalRedditApi Api
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 
 <PageTitle>@(_post?.Title ?? "Post") - r/AllOfHistory</PageTitle>
 
@@ -33,7 +34,11 @@
                 <div class="ptext">@_post.Body</div>
                 <div class="pactions">
                     <span>@_post.Replies.Count comments</span>
-                    <button class="link" @onclick="Share">Share@(_shareMsg >= 0 ? $" · {_shareMsg}" : "")</button>
+                    <button class="link" @onclick="Share">Share</button>
+                    @if (_copied)
+                    {
+                        <span class="copied-bubble">Link copied!</span>
+                    }
                 </div>
 
                 <div class="sort-tabs comments-sort">
@@ -69,7 +74,7 @@
     private Post? _post;
     private string _sort = "hot";
     private bool _loading = true;
-    private int _shareMsg = -1;
+    private bool _copied;
     private HubConnection? _hub;
 
     protected override async Task OnParametersSetAsync() => await LoadPost();
@@ -125,8 +130,14 @@
     private async Task Share()
     {
         if (_post is null) return;
-        var c = await Api.SharePostAsync(_post.Id);
-        _shareMsg = c < 0 ? 0 : c;
+        var url = Nav.ToAbsoluteUri($"p/{_post.Id}").ToString();
+        try { await JS.InvokeVoidAsync("navigator.clipboard.writeText", url); } catch { /* clipboard may be blocked */ }
+        _ = Api.SharePostAsync(_post.Id);
+        _copied = true;
+        StateHasChanged();
+        await Task.Delay(1800);
+        _copied = false;
+        StateHasChanged();
     }
 
     private static string Cap(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];

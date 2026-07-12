@@ -34,6 +34,9 @@ public interface IPostService
     IReadOnlyList<Post> GetRecent(int count = 50);
     Post? Get(Guid id);
     IReadOnlyList<TopPoster> GetTopPosters(int count = 10);
+
+    /// <summary>Remove any comments whose figure isn't in the approved cast; returns how many were purged.</summary>
+    int PurgeUnapproved();
 }
 
 public sealed class PostService : IPostService
@@ -71,6 +74,26 @@ public sealed class PostService : IPostService
 
     public IReadOnlyList<Post> GetRecent(int count = 50) => _posts.GetRecent(count);
     public Post? Get(Guid id) => _posts.Get(id);
+
+    public int PurgeUnapproved()
+    {
+        var removed = 0;
+        foreach (var post in _posts.GetRecent(int.MaxValue))
+        {
+            var before = post.Replies.Count;
+            post.Replies.RemoveAll(r => r.Provider != AiProvider.Scripted && !Figures.IsApproved(r.Figure));
+            if (post.Replies.Count == before) continue;
+
+            // Re-root any comment whose parent was just removed, so it stays visible.
+            var ids = post.Replies.Select(r => r.Id).ToHashSet();
+            foreach (var r in post.Replies)
+                if (r.ParentReplyId is { } pid && !ids.Contains(pid)) r.ParentReplyId = null;
+
+            removed += before - post.Replies.Count;
+            _posts.Update(post);
+        }
+        return removed;
+    }
 
     public IReadOnlyList<TopPoster> GetTopPosters(int count = 10)
         => _posts.GetRecent(int.MaxValue)

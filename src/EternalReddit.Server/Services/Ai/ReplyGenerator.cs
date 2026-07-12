@@ -94,13 +94,31 @@ public sealed class ReplyGenerator : IReplyGenerator
 
     private static string CleanText(string text)
     {
-        var t = (text ?? "").Trim();
-        if (t.StartsWith("{") && t.Contains("\"body\""))
+        var t = (text ?? "").Replace("```json", "").Replace("```", "").Trim();
+
+        // Some models ignore "plain text only" and emit one or more JSON objects
+        // (sometimes with extra commentary). Pull the body out of the first valid one.
+        if (t.Contains("\"body\"", StringComparison.OrdinalIgnoreCase))
         {
-            try { using var d = JsonDocument.Parse(t); if (d.RootElement.TryGetProperty("body", out var b)) t = b.GetString() ?? t; }
-            catch { /* not JSON, use as-is */ }
+            var start = t.IndexOf('{');
+            var depth = 0;
+            for (var i = start; i >= 0 && i < t.Length; i++)
+            {
+                if (t[i] == '{') depth++;
+                else if (t[i] == '}' && --depth == 0)
+                {
+                    try
+                    {
+                        using var d = JsonDocument.Parse(t[start..(i + 1)]);
+                        if (d.RootElement.TryGetProperty("body", out var b) && b.GetString() is { Length: > 0 } body)
+                            return body.Trim();
+                    }
+                    catch { /* not JSON after all */ }
+                    break;
+                }
+            }
         }
-        t = t.Trim();
+
         if (t.Length >= 2 && t[0] == '"' && t[^1] == '"') t = t[1..^1].Trim();
         return t;
     }

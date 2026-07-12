@@ -64,6 +64,11 @@ public static class PostEndpoints
         app.MapGet("/api/logs", (Services.InMemoryLogSink sink, int? count) =>
             Results.Ok(sink.Recent(count is > 0 ? count.Value : 200)));
 
+        // --- Authenticated: the current user's own posts (profile page) ---
+        app.MapGet("/api/me/posts", (IPostService svc, HttpContext http) =>
+            Results.Ok(svc.GetRecent(500).Where(p => p.AuthorUserId == AuthorId(http)).ToList()))
+            .RequireAuthorization();
+
         return app;
     }
 

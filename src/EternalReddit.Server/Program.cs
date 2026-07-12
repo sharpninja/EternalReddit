@@ -231,6 +231,9 @@ app.MapGet("/api/me", async (HttpContext http, IAuthenticationSchemeProvider sch
 
 app.MapFallbackToFile("index.html");
 
+// One-time cleanup on startup: drop any legacy comments from non-approved figures.
+try { app.Services.GetRequiredService<IPostService>().PurgeUnapproved(); } catch { }
+
 app.Run();
 
 // Exposed for WebApplicationFactory-based integration tests.

@@ -9,7 +9,7 @@
         <a class="navlink" href="logs">Logs</a>
         @if (_me is { Authenticated: true })
         {
-            <span class="dim">@_me.Name</span>
+            <a class="navlink" href="profile">@_me.Name</a>
             <form method="post" action="/logout" class="inline-form">
                 <button class="login" type="submit">Log out</button>
             </form>

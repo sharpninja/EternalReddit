@@ -1,0 +1,75 @@
+@page "/profile"
+@inject EternalRedditApi Api
+
+<PageTitle>Profile - r/AllOfHistory</PageTitle>
+
+<div class="postpage">
+    <a class="link back" href="">&larr; back to feed</a>
+
+    @if (_loading)
+    {
+        <p class="dim center">Loading...</p>
+    }
+    else if (_me is null || !_me.Authenticated)
+    {
+        <p class="dim center">You're not signed in. Use the Google button in the top bar to log in.</p>
+    }
+    else
+    {
+        <div class="profile-head">
+            <h2 class="profile-name">@_me.Name</h2>
+            <div class="dim">@(_myPosts?.Count ?? 0) posts · @PostKarma() post karma</div>
+        </div>
+
+        @if (_myPosts is { Count: > 0 })
+        {
+            @foreach (var p in _myPosts.OrderByDescending(x => x.CreatedUtc))
+            {
+                <div class="post">
+                    <div class="pvote"><span class="score">@p.Score</span></div>
+                    <div class="pmain">
+                        <div class="pmeta">@Ago(p.CreatedUtc)</div>
+                        <a class="ptitle-link" href="@($"p/{p.Id}")"><h3 class="ptitle">@p.Title</h3></a>
+                        <div class="ptext">@p.Body</div>
+                        <div class="pactions">
+                            <a class="link" href="@($"p/{p.Id}")">&#128172; @p.Replies.Count comments</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <p class="dim">No posts yet. Head back to the feed and start one.</p>
+        }
+    }
+</div>
+
+@code {
+    private MeInfo? _me;
+    private List<Post>? _myPosts;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { _me = await Api.GetMeAsync(); }
+        catch { /* leave unauthenticated */ }
+
+        if (_me is { Authenticated: true })
+        {
+            try { _myPosts = await Api.GetMyPostsAsync(); }
+            catch { /* best-effort */ }
+        }
+        _loading = false;
+    }
+
+    private int PostKarma() => _myPosts?.Sum(p => p.Score) ?? 0;
+
+    private static string Ago(DateTime utc)
+    {
+        var d = DateTime.UtcNow - utc;
+        return d.TotalMinutes < 60 ? $"{(int)Math.Max(1, d.TotalMinutes)}m ago"
+             : d.TotalHours < 24 ? $"{(int)d.TotalHours}h ago"
+             : $"{(int)d.TotalDays}d ago";
+    }
+}
