@@ -17,6 +17,7 @@ public sealed class AutoReplyBackgroundService : BackgroundService
     private readonly IPostStore _posts;
     private readonly IReplyGenerator _generator;
     private readonly IModerator _moderator;
+    private readonly IFeedNotifier _notifier;
     private readonly ILogger<AutoReplyBackgroundService> _log;
     private readonly RoundRobinSelector? _rotation;
 
@@ -24,11 +25,13 @@ public sealed class AutoReplyBackgroundService : BackgroundService
         IPostStore posts,
         IReplyGenerator generator,
         IModerator moderator,
+        IFeedNotifier notifier,
         ILogger<AutoReplyBackgroundService> log)
     {
         _posts = posts;
         _generator = generator;
         _moderator = moderator;
+        _notifier = notifier;
         _log = log;
         _rotation = generator.Available.Count > 0 ? new RoundRobinSelector(generator.Available) : null;
     }
@@ -76,6 +79,7 @@ public sealed class AutoReplyBackgroundService : BackgroundService
 
         thread.Replies.Add(reply);
         _posts.Update(thread);
+        await _notifier.FeedChangedAsync();
         _log.LogInformation("Background reply added to post {PostId} via {Provider}", thread.Id, reply.Provider);
     }
 }

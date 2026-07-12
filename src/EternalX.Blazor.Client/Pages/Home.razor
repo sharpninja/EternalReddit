@@ -1,5 +1,7 @@
 @page "/"
+@implements IAsyncDisposable
 @inject EternalXApi Api
+@inject NavigationManager Nav
 
 <PageTitle>r/AllOfHistory</PageTitle>
 
@@ -62,8 +64,28 @@ else
     private string _body = "";
     private string _status = "";
     private readonly Dictionary<Guid, int> _shareMsg = new();
+    private HubConnection? _hub;
 
-    protected override async Task OnInitializedAsync() => await Load();
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+
+        _hub = new HubConnectionBuilder()
+            .WithUrl(Nav.ToAbsoluteUri("hubs/feed"))
+            .WithAutomaticReconnect()
+            .Build();
+        _hub.On("FeedChanged", async () =>
+        {
+            await Load();
+            await InvokeAsync(StateHasChanged);
+        });
+        try { await _hub.StartAsync(); } catch { /* live updates are optional */ }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hub is not null) await _hub.DisposeAsync();
+    }
 
     private async Task Load()
     {

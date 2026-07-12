@@ -1,13 +1,41 @@
 @inherits LayoutComponentBase
+@inject EternalXApi Api
 
 <div class="app-shell">
     <header class="topbar">
         <div class="brand">r/<span class="brand-accent">AllOfHistory</span></div>
         <div class="tagline">history's cast, arguing in the comments</div>
         <div class="spacer"></div>
-        <a class="login" href="/login">Log in</a>
+        @if (_me is { Authenticated: true })
+        {
+            <span class="dim">@_me.Name</span>
+            <form method="post" action="/logout" class="inline-form">
+                <button class="login" type="submit">Log out</button>
+            </form>
+        }
+        else if (_me is not null && _me.Providers.Length > 0)
+        {
+            @foreach (var p in _me.Providers)
+            {
+                <a class="login" href="@($"/login/{p}")">@p</a>
+            }
+        }
+        else
+        {
+            <span class="dim" title="Set OAuth client IDs to enable login">Log in</span>
+        }
     </header>
     <main class="content">
         @Body
     </main>
 </div>
+
+@code {
+    private MeInfo? _me;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { _me = await Api.GetMeAsync(); }
+        catch { /* leave login as a passive label */ }
+    }
+}

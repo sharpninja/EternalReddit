@@ -1,9 +1,13 @@
+using System.Net.Http.Headers;
+using System.Security.Claims;
 using EternalX.Blazor.Server.Data;
 using EternalX.Blazor.Server.Endpoints;
+using EternalX.Blazor.Server.Hubs;
 using EternalX.Blazor.Server.Services;
 using EternalX.Blazor.Server.Services.Ai;
 using EternalX.Blazor.Server.Services.Moderation;
 using EternalX.Blazor.Server.Services.RateLimiting;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,7 +24,7 @@ builder.Services.AddSingleton<IUserStore, LiteDbUserStore>();
 builder.Services.AddSingleton<IModerationLogStore, LiteDbModerationLogStore>();
 
 // --- Core services ---
-builder.Services.AddSingleton<IClock, SystemClock>();
+builder.Services.AddSingleton<IClock, EternalX.Blazor.Server.Services.SystemClock>();
 builder.Services.AddSingleton<IRateLimiter>(sp =>
     new SlidingWindowRateLimiter(sp.GetRequiredService<IClock>(), limit: 1, window: TimeSpan.FromMinutes(1)));
 
@@ -33,6 +37,10 @@ builder.Services.AddSingleton<IAiProvider, OpenAiProvider>();
 builder.Services.AddSingleton<IAiProvider, GrokProvider>();
 builder.Services.AddSingleton<IAiProvider, HuggingFaceProvider>();
 builder.Services.AddSingleton<IReplyGenerator, ReplyGenerator>();
+
+// --- Live updates (SignalR) ---
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<IFeedNotifier, SignalRFeedNotifier>();
 
 builder.Services.AddSingleton<IPostService, PostService>();
 builder.Services.AddHostedService<AutoReplyBackgroundService>();
@@ -73,9 +81,36 @@ AddOidc("Google", "https://accounts.google.com", o =>
     o.Scope.Add("email");
 });
 AddOidc("Microsoft", "https://login.microsoftonline.com/common/v2.0");
-// NOTE: GitHub is OAuth2, not true OIDC (no discovery/id_token). Kept as a
-// scaffold; a dedicated OAuth handler is the correct fix (flagged).
-AddOidc("GitHub", "https://github.com/login/oauth");
+
+// GitHub is OAuth2, not OIDC (no discovery/id_token), so it uses a dedicated
+// OAuth handler that fetches the profile from the GitHub user API.
+var githubClientId = builder.Configuration["Authentication:GitHub:ClientId"];
+if (!string.IsNullOrWhiteSpace(githubClientId))
+{
+    authBuilder.AddOAuth("GitHub", options =>
+    {
+        options.ClientId = githubClientId;
+        options.ClientSecret = builder.Configuration["Authentication:GitHub:ClientSecret"] ?? "";
+        options.CallbackPath = "/signin-github";
+        options.AuthorizationEndpoint = "https://github.com/login/oauth/authorize";
+        options.TokenEndpoint = "https://github.com/login/oauth/access_token";
+        options.UserInformationEndpoint = "https://api.github.com/user";
+        options.SaveTokens = true;
+        options.Scope.Add("read:user");
+        options.ClaimActions.MapJsonKey(ClaimTypes.NameIdentifier, "id");
+        options.ClaimActions.MapJsonKey(ClaimTypes.Name, "login");
+        options.Events.OnCreatingTicket = async ctx =>
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, ctx.Options.UserInformationEndpoint);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", ctx.AccessToken);
+            request.Headers.UserAgent.ParseAdd("EternalX");
+            using var response = await ctx.Backchannel.SendAsync(request, ctx.HttpContext.RequestAborted);
+            response.EnsureSuccessStatusCode();
+            using var json = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            ctx.RunClaimActions(json.RootElement);
+        };
+    });
+}
 
 builder.Services.AddAuthorization();
 
@@ -105,7 +140,38 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapPostEndpoints();
+app.MapHub<FeedHub>("/hubs/feed");
 app.MapHealthChecks("/health");
+
+// --- Auth endpoints ---
+app.MapGet("/login/{provider}", (string provider) =>
+    Results.Challenge(new AuthenticationProperties { RedirectUri = "/" }, new[] { provider }));
+
+app.MapGet("/logout", async (HttpContext http) =>
+{
+    await http.SignOutAsync("Cookies");
+    return Results.Redirect("/");
+});
+app.MapPost("/logout", async (HttpContext http) =>
+{
+    await http.SignOutAsync("Cookies");
+    return Results.Redirect("/");
+});
+
+app.MapGet("/api/me", async (HttpContext http, IAuthenticationSchemeProvider schemes) =>
+{
+    var providers = (await schemes.GetAllSchemesAsync())
+        .Where(s => s.Name != "Cookies")
+        .Select(s => s.Name)
+        .ToArray();
+    return Results.Ok(new
+    {
+        authenticated = http.User.Identity?.IsAuthenticated ?? false,
+        name = http.User.Identity?.Name,
+        providers
+    });
+});
+
 app.MapFallbackToFile("index.html");
 
 app.Run();

@@ -12,6 +12,9 @@ public sealed class EternalXApi
     public async Task<List<Post>> GetFeedAsync(int count = 50)
         => await _http.GetFromJsonAsync<List<Post>>($"api/posts?count={count}") ?? new();
 
+    public async Task<MeInfo> GetMeAsync()
+        => await _http.GetFromJsonAsync<MeInfo>("api/me") ?? new MeInfo(false, null, Array.Empty<string>());
+
     public Task<HttpResponseMessage> CreatePostAsync(string? title, string body)
         => _http.PostAsJsonAsync("api/posts", new CreatePostBody(title, body));
 
@@ -33,3 +36,7 @@ public sealed class EternalXApi
     public sealed record CreatePostBody(string? Title, string Body);
     private sealed record ShareResult(int ShareCount, string Url);
 }
+
+/// <summary>Current auth state plus the OAuth providers the server has configured.</summary>
+public sealed record MeInfo(bool Authenticated, string? Name, string[] Providers);
+

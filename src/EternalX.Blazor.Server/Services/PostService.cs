@@ -38,6 +38,7 @@ public sealed class PostService : IPostService
     private readonly IRateLimiter _rateLimiter;
     private readonly IModerator _moderator;
     private readonly IReplyGenerator _generator;
+    private readonly IFeedNotifier _notifier;
 
     public PostService(
         IPostStore posts,
@@ -45,7 +46,8 @@ public sealed class PostService : IPostService
         IModerationLogStore log,
         IRateLimiter rateLimiter,
         IModerator moderator,
-        IReplyGenerator generator)
+        IReplyGenerator generator,
+        IFeedNotifier notifier)
     {
         _posts = posts;
         _users = users;
@@ -53,6 +55,7 @@ public sealed class PostService : IPostService
         _rateLimiter = rateLimiter;
         _moderator = moderator;
         _generator = generator;
+        _notifier = notifier;
     }
 
     public IReadOnlyList<Post> GetRecent(int count = 50) => _posts.GetRecent(count);
@@ -94,6 +97,7 @@ public sealed class PostService : IPostService
         _posts.Add(post);
 
         await GenerateReplyThreadAsync(post, ct);
+        await _notifier.FeedChangedAsync();
         return CreatePostResult.Created(post);
     }
 

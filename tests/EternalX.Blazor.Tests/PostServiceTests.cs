@@ -19,7 +19,7 @@ public class PostServiceTests
         var limiter = new SlidingWindowRateLimiter(new FakeClock(), rateLimit, TimeSpan.FromMinutes(1));
         var moderator = new Moderator(classifier ?? new StubClassifier(ModerationVerdict.Clean));
         var gen = generator ?? new ReplyGenerator(Array.Empty<IAiProvider>());
-        return new PostService(_posts, _users, _logs, limiter, moderator, gen);
+        return new PostService(_posts, _users, _logs, limiter, moderator, gen, new NullFeedNotifier());
     }
 
     private static CreatePostRequest Req(string body, string ip = "1.1.1.1", string user = "google:abc")

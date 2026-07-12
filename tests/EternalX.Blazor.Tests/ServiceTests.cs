@@ -149,4 +149,25 @@ public class LiteDbPostStoreTests
             if (File.Exists(path)) File.Delete(path);
         }
     }
+
+    [Fact]
+    public void Timestamps_round_trip_as_utc()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"eternalx-utc-{Guid.NewGuid():n}.db");
+        try
+        {
+            var when = new DateTime(2026, 3, 1, 15, 30, 0, DateTimeKind.Utc);
+            using var ctx = new LiteDbContext(path);
+            var store = new LiteDbPostStore(ctx);
+            store.Add(new Post { Body = "x", CreatedUtc = when });
+
+            var fetched = store.GetRecent()[0];
+            Assert.Equal(DateTimeKind.Utc, fetched.CreatedUtc.Kind);
+            Assert.Equal(when, fetched.CreatedUtc);
+        }
+        finally
+        {
+            if (File.Exists(path)) File.Delete(path);
+        }
+    }
 }
