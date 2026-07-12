@@ -117,7 +117,7 @@ builder.Services.AddAuthorization();
 
 // Behind ngrok (or any reverse proxy): honor X-Forwarded-Proto/Host so the
 // OIDC handler builds redirect URIs with the public https host
-// (https://eternal.ngrok.app/signin-oidc) instead of the internal one.
+// (https://eternalsocial.ngrok.app/signin-oidc) instead of the internal one.
 builder.Services.Configure<ForwardedHeadersOptions>(o =>
 {
     o.ForwardedHeaders = ForwardedHeaders.XForwardedFor
