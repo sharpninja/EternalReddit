@@ -23,6 +23,9 @@ public sealed record CreatePostResult(CreatePostStatus Status, Post? Post, strin
 public interface IPostService
 {
     Task<CreatePostResult> CreateAsync(CreatePostRequest request, CancellationToken ct = default);
+
+    /// <summary>Create an original post authored by a character (no rate limit); returns null if moderation blocks it.</summary>
+    Task<Post?> CreateSystemPostAsync(string authorName, string? title, string body, CancellationToken ct = default);
     VoteResult? Vote(Guid postId, Guid? replyId, string userId, VoteKind kind);
     int Share(Guid postId, Guid? replyId);
     IReadOnlyList<Post> GetRecent(int count = 50);
@@ -126,6 +129,40 @@ public sealed class PostService : IPostService
         _posts.Update(post); // persist Columbus even when no AI providers are configured
         await _notifier.FeedChangedAsync();
         return CreatePostResult.Created(post);
+    }
+
+    public async Task<Post?> CreateSystemPostAsync(string authorName, string? title, string body, CancellationToken ct = default)
+    {
+        var outcome = await _moderator.ReviewAsync(body, ct);
+        if (!outcome.IsAllowed)
+        {
+            _logger.LogWarning("Character post from {Author} blocked: {Verdict}", authorName, outcome.Verdict);
+            return null;
+        }
+
+        var post = new Post
+        {
+            Title = string.IsNullOrWhiteSpace(title) ? null : title,
+            Body = body,
+            AuthorName = authorName,
+            AuthorIp = "system",
+            CreatedUtc = DateTime.UtcNow
+        };
+        _posts.Add(post);
+        _logger.LogInformation("Character post created by {Author}", authorName);
+
+        post.Replies.Insert(0, new Reply
+        {
+            Figure = "Christopher Columbus",
+            Provider = AiProvider.Scripted,
+            Body = "First!",
+            CreatedUtc = DateTime.UtcNow
+        });
+
+        await GenerateReplyThreadAsync(post, ct);
+        _posts.Update(post);
+        await _notifier.FeedChangedAsync();
+        return post;
     }
 
     public VoteResult? Vote(Guid postId, Guid? replyId, string userId, VoteKind kind)

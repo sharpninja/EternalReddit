@@ -111,6 +111,23 @@ public class PostServiceTests
     }
 
     [Fact]
+    public async Task Character_post_is_authored_by_the_figure_with_columbus_first()
+    {
+        var gen = new ReplyGenerator(new[]
+        {
+            new FakeAiProvider(AiProvider.Claude, "{\"figure\":\"Newton\",\"body\":\"Indeed.\"}")
+        });
+        var svc = Build(gen);
+
+        var post = await svc.CreateSystemPostAsync("Isaac Newton", "Gravity is underrated", "Discuss.");
+
+        Assert.NotNull(post);
+        Assert.Equal("Isaac Newton", post!.AuthorName);
+        Assert.Equal("Gravity is underrated", post.Title);
+        Assert.Equal("Christopher Columbus", post.Replies[0].Figure);
+    }
+
+    [Fact]
     public async Task Distinct_users_each_get_their_own_vote()
     {
         var svc = Build();

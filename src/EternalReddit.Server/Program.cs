@@ -60,6 +60,7 @@ builder.Services.AddSingleton<IFeedNotifier, SignalRFeedNotifier>();
 
 builder.Services.AddSingleton<IPostService, PostService>();
 builder.Services.AddHostedService<AutoReplyBackgroundService>();
+builder.Services.AddHostedService<CharacterPostBackgroundService>();
 
 // --- Authentication (OIDC: Google, Microsoft, GitHub) ---
 // A provider is only registered when its ClientId is configured, so the app
