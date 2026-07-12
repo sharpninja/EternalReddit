@@ -16,7 +16,7 @@ public sealed class ClaudeProvider : IAiProvider
     {
         _factory = factory;
         _key = config["ANTHROPIC_API_KEY"] ?? "";
-        _model = config["CLAUDE_MODEL"] ?? "claude-opus-4-8";
+        _model = config["CLAUDE_MODEL"] ?? "claude-haiku-4-5";
     }
 
     public AiProvider Kind => AiProvider.Claude;
