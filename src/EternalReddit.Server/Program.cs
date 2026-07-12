@@ -117,7 +117,7 @@ builder.Services.AddAuthorization();
 
 // Behind ngrok (or any reverse proxy): honor X-Forwarded-Proto/Host so the
 // OIDC handler builds redirect URIs with the public https host
-// (https://sharpninja.ngrok.app/signin-oidc) instead of the internal one.
+// (https://eternal.ngrok.app/signin-oidc) instead of the internal one.
 builder.Services.Configure<ForwardedHeadersOptions>(o =>
 {
     o.ForwardedHeaders = ForwardedHeaders.XForwardedFor
@@ -125,7 +125,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(o =>
         | ForwardedHeaders.XForwardedHost;
     // The proxy (ngrok container) is on an untrusted network from ASP.NET's
     // default view, so clear the allow-lists to accept its forwarded headers.
-    o.KnownNetworks.Clear();
+    o.KnownIPNetworks.Clear();
     o.KnownProxies.Clear();
 });
 
