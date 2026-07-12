@@ -149,12 +149,21 @@ public sealed class PostService : IPostService
         var rotation = new RoundRobinSelector(_generator.Available);
         for (var i = 0; i < ReplyCount; i++)
         {
-            var reply = await _generator.GenerateReplyAsync(post, rotation.Next(), isBackground: false, ct);
+            try
+            {
+                var reply = await _generator.GenerateReplyAsync(post, rotation.Next(), isBackground: false, ct);
 
-            var outcome = await _moderator.ReviewAsync(reply.Body, ct);
-            LogDecision(TargetKind.Reply, reply.Body, outcome, userId: null, ip: post.AuthorIp);
-            if (outcome.IsAllowed)
-                post.Replies.Add(reply);
+                var outcome = await _moderator.ReviewAsync(reply.Body, ct);
+                LogDecision(TargetKind.Reply, reply.Body, outcome, userId: null, ip: post.AuthorIp);
+                if (outcome.IsAllowed)
+                    post.Replies.Add(reply);
+            }
+            catch (Exception ex)
+            {
+                // A single provider hiccup (rate limit, transient 5xx, bad JSON) must not
+                // fail the user's post. Surface it to the container log and keep going.
+                Console.Error.WriteLine($"[reply-gen] post {post.Id} provider error: {ex.Message}");
+            }
         }
 
         _posts.Update(post);

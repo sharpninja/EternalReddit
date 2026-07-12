@@ -27,7 +27,7 @@ public static class PostEndpoints
                 body.Title,
                 body.Body,
                 AuthorId(http),
-                http.User.Identity?.Name ?? "anonymous",
+                DisplayName(http),
                 http.Connection.RemoteIpAddress?.ToString() ?? "unknown");
 
             var result = await svc.CreateAsync(request, ct);
@@ -67,6 +67,20 @@ public static class PostEndpoints
         => http.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
            ?? http.User.FindFirst("sub")?.Value
            ?? "";
+
+    // OIDC providers put the display name under different claim types (and the
+    // cookie's Identity.Name is often null when NameClaimType doesn't match), so
+    // fall through the common ones before giving up on "anonymous".
+    private static string DisplayName(HttpContext http)
+        => Nonempty(http.User.Identity?.Name)
+           ?? Nonempty(http.User.FindFirst("name")?.Value)
+           ?? Nonempty(http.User.FindFirst(ClaimTypes.Name)?.Value)
+           ?? Nonempty(http.User.FindFirst(ClaimTypes.GivenName)?.Value)
+           ?? Nonempty(http.User.FindFirst("email")?.Value)
+           ?? Nonempty(http.User.FindFirst(ClaimTypes.Email)?.Value)
+           ?? "anonymous";
+
+    private static string? Nonempty(string? s) => string.IsNullOrWhiteSpace(s) ? null : s;
 
     private static bool TryParseDir(string dir, out VoteKind kind)
     {
