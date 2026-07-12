@@ -4,14 +4,14 @@ WORKDIR /src
 
 # Restore first (csproj only) for layer caching. Restoring the Server pulls in
 # the Client and Shared project references.
-COPY src/EternalX.Blazor.Shared/EternalX.Blazor.Shared.csproj src/EternalX.Blazor.Shared/
-COPY src/EternalX.Blazor.Client/EternalX.Blazor.Client.csproj src/EternalX.Blazor.Client/
-COPY src/EternalX.Blazor.Server/EternalX.Blazor.Server.csproj src/EternalX.Blazor.Server/
-RUN dotnet restore src/EternalX.Blazor.Server/EternalX.Blazor.Server.csproj
+COPY src/EternalReddit.Shared/EternalReddit.Shared.csproj src/EternalReddit.Shared/
+COPY src/EternalReddit.Client/EternalReddit.Client.csproj src/EternalReddit.Client/
+COPY src/EternalReddit.Server/EternalReddit.Server.csproj src/EternalReddit.Server/
+RUN dotnet restore src/EternalReddit.Server/EternalReddit.Server.csproj
 
 # Build + publish the host (which bundles the WASM client's static assets).
 COPY src/ src/
-RUN dotnet publish src/EternalX.Blazor.Server/EternalX.Blazor.Server.csproj \
+RUN dotnet publish src/EternalReddit.Server/EternalReddit.Server.csproj \
     -c Release -o /app/publish /p:UseAppHost=false
 
 # --- runtime ---
@@ -33,7 +33,7 @@ ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 USER $APP_UID
 
-ENTRYPOINT ["dotnet", "EternalX.Blazor.Server.dll"]
+ENTRYPOINT ["dotnet", "EternalReddit.Server.dll"]
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD curl -f http://localhost:8080/health || exit 1

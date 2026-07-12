@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/EternalReddit.Client/EternalReddit.Client.csproj" />
+    <Project Path="src/EternalReddit.Server/EternalReddit.Server.csproj" />
+    <Project Path="src/EternalReddit.Shared/EternalReddit.Shared.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/EternalReddit.Tests/EternalReddit.Tests.csproj" />
+  </Folder>
+</Solution>

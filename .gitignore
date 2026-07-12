@@ -57,14 +57,14 @@ coverage/
 *.zip
 *.tar.gz
 
-# .NET build output (EternalX.Blazor solution)
+# .NET build output (EternalReddit solution)
 [Bb]in/
 [Oo]bj/
 *.user
 [Dd]ebug/
 [Rr]elease/
 # LiteDB runtime store only (repo-root ./data). Anchored so it does NOT match
-# source folders like src/EternalX.Blazor.Server/Data/ (git is case-insensitive
+# source folders like src/EternalReddit.Server/Data/ (git is case-insensitive
 # on Windows, so a bare "data/" matched "Data/" and dropped it from the repo).
 /data/
 *.db
