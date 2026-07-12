@@ -77,6 +77,7 @@ public sealed class AutoReplyBackgroundService : BackgroundService
             return;
         }
 
+        PostService.ThreadUnder(thread.Replies, reply, 60);
         thread.Replies.Add(reply);
         _posts.Update(thread);
         await _notifier.FeedChangedAsync();

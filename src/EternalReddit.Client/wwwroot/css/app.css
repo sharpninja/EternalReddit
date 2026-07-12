@@ -161,3 +161,19 @@ table.logs tr:first-child td { border-top: none; }
 .log-error .log-level { color: #e5484d; }
 .log-warning .log-level { color: #f5a623; }
 .log-information .log-level { color: var(--openai); }
+
+/* ---- feed summary: clickable title + top-comment preview ---- */
+.ptitle-link { display: block; }
+.ptitle-link:hover .ptitle { color: var(--accent); }
+.top-comment {
+    display: block; margin-top: 8px; padding: 8px 10px;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
+}
+.top-comment:hover { border-color: var(--accent); }
+.tc-meta { font-size: 0.75rem; }
+.tc-body { font-size: 0.88rem; line-height: 1.4; margin-top: 2px; }
+.pactions .expand { font-weight: 700; }
+
+/* ---- post detail page ---- */
+.postpage { max-width: 680px; margin: 0 auto; }
+.postpage .back { display: inline-block; margin-bottom: 12px; font-size: 0.85rem; }

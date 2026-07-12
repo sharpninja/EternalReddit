@@ -1,0 +1,114 @@
+@page "/p/{Id:guid}"
+@implements IAsyncDisposable
+@inject EternalRedditApi Api
+@inject NavigationManager Nav
+
+<PageTitle>@(_post?.Title ?? "Post") - r/AllOfHistory</PageTitle>
+
+<div class="postpage">
+    <a class="link back" href="">&larr; back to feed</a>
+
+    @if (_loading)
+    {
+        <p class="dim center">Loading...</p>
+    }
+    else if (_post is null)
+    {
+        <p class="dim center">Post not found. <a class="link" href="">Back to feed</a></p>
+    }
+    else
+    {
+        <div class="post">
+            <div class="pvote">
+                <button class="arrow" @onclick='() => VotePost("up")'>&#9650;</button>
+                <span class="score">@_post.Score</span>
+                <button class="arrow" @onclick='() => VotePost("down")'>&#9660;</button>
+            </div>
+            <div class="pmain">
+                <div class="pmeta">Posted by @(string.IsNullOrEmpty(_post.AuthorName) ? "u/anon" : _post.AuthorName) · @Ago(_post.CreatedUtc)</div>
+                @if (!string.IsNullOrWhiteSpace(_post.Title))
+                {
+                    <h3 class="ptitle">@_post.Title</h3>
+                }
+                <div class="ptext">@_post.Body</div>
+                <div class="pactions">
+                    <span>@_post.Replies.Count comments</span>
+                    <button class="link" @onclick="Share">Share@(_shareMsg >= 0 ? $" · {_shareMsg}" : "")</button>
+                </div>
+                <div class="comments">
+                    @if (TopLevel(_post).Any())
+                    {
+                        @foreach (var top in TopLevel(_post))
+                        {
+                            <CommentView Reply="top" All="_post.Replies" PostId="_post.Id" OnVoted="StateHasChanged" />
+                        }
+                    }
+                    else
+                    {
+                        <p class="dim">No comments yet.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+    private Post? _post;
+    private bool _loading = true;
+    private int _shareMsg = -1;
+    private HubConnection? _hub;
+
+    protected override async Task OnParametersSetAsync() => await LoadPost();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _hub = new HubConnectionBuilder()
+            .WithUrl(Nav.ToAbsoluteUri("hubs/feed"))
+            .WithAutomaticReconnect()
+            .Build();
+        _hub.On("FeedChanged", async () =>
+        {
+            await LoadPost();
+            await InvokeAsync(StateHasChanged);
+        });
+        try { await _hub.StartAsync(); } catch { /* live updates are optional */ }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hub is not null) await _hub.DisposeAsync();
+    }
+
+    private async Task LoadPost()
+    {
+        _loading = true;
+        _post = await Api.GetPostAsync(Id);
+        _loading = false;
+    }
+
+    private async Task VotePost(string dir)
+    {
+        if (_post is null) return;
+        var r = await Api.VotePostAsync(_post.Id, dir);
+        if (r is not null) { _post.Upvotes = r.Upvotes; _post.Downvotes = r.Downvotes; }
+    }
+
+    private async Task Share()
+    {
+        if (_post is null) return;
+        var c = await Api.SharePostAsync(_post.Id);
+        _shareMsg = c < 0 ? 0 : c;
+    }
+
+    private static IEnumerable<Reply> TopLevel(Post p) => p.Replies.Where(r => r.ParentReplyId is null);
+
+    private static string Ago(DateTime utc)
+    {
+        var d = DateTime.UtcNow - utc;
+        return d.TotalMinutes < 60 ? $"{(int)Math.Max(1, d.TotalMinutes)}m ago"
+             : d.TotalHours < 24 ? $"{(int)d.TotalHours}h ago"
+             : $"{(int)d.TotalDays}d ago";
+    }
+}

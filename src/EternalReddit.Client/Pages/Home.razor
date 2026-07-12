@@ -36,22 +36,25 @@
                     </div>
                     <div class="pmain">
                         <div class="pmeta">Posted by @(string.IsNullOrEmpty(post.AuthorName) ? "u/anon" : post.AuthorName) · @Ago(post.CreatedUtc)</div>
-                        @if (!string.IsNullOrWhiteSpace(post.Title))
-                        {
-                            <h3 class="ptitle">@post.Title</h3>
-                        }
+                        <a class="ptitle-link" href="@($"p/{post.Id}")">
+                            <h3 class="ptitle">@(string.IsNullOrWhiteSpace(post.Title) ? Snippet(post.Body, 90) : post.Title)</h3>
+                        </a>
                         <div class="ptext">@post.Body</div>
+
+                        @{ var top = TopComment(post); }
+                        @if (top is not null)
+                        {
+                            <a class="top-comment" href="@($"p/{post.Id}")">
+                                <div class="tc-meta"><span class="figure">@top.Figure</span><span class="dim"> · top comment · @top.Score pts</span></div>
+                                <div class="tc-body">@Snippet(top.Body, 180)</div>
+                            </a>
+                        }
+
                         <div class="pactions">
-                            <span>@post.Replies.Count comments</span>
+                            <a class="link expand" href="@($"p/{post.Id}")">&#128172; @post.Replies.Count comments &rsaquo;</a>
                             <button class="link" @onclick="() => Share(post)">
                                 Share@(_shareMsg.TryGetValue(post.Id, out var m) ? $" · {m}" : "")
                             </button>
-                        </div>
-                        <div class="comments">
-                            @foreach (var top in TopLevel(post))
-                            {
-                                <CommentView Reply="top" All="post.Replies" PostId="post.Id" OnVoted="RefreshTopPosters" />
-                            }
                         </div>
                     </div>
                 </div>
@@ -104,15 +107,6 @@
         _loading = false;
     }
 
-    // Only comment votes change figure karma, so the sidebar is refreshed from
-    // CommentView (not from post votes).
-    private async Task RefreshTopPosters()
-    {
-        try { _topPosters = await Api.GetTopPostersAsync(); }
-        catch { /* leaderboard is best-effort */ }
-        StateHasChanged();
-    }
-
     private async Task Submit()
     {
         if (string.IsNullOrWhiteSpace(_body)) return;
@@ -154,7 +148,11 @@
         _shareMsg[post.Id] = count < 0 ? 0 : count;
     }
 
-    private static IEnumerable<Reply> TopLevel(Post p) => p.Replies.Where(r => r.ParentReplyId is null);
+    private static Reply? TopComment(Post p)
+        => p.Replies.OrderByDescending(r => r.Score).ThenBy(r => r.CreatedUtc).FirstOrDefault();
+
+    private static string Snippet(string s, int max)
+        => string.IsNullOrEmpty(s) ? "" : (s.Length <= max ? s : s[..max].TrimEnd() + "…");
 
     private static string Ago(DateTime utc)
     {

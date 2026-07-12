@@ -190,6 +190,18 @@ public sealed class PostService : IPostService
 
     private static string Label(VoteKind kind) => kind == VoteKind.Up ? "up" : "down";
 
+    /// <summary>
+    /// With <paramref name="percentChance"/>%, nest this reply under an existing
+    /// non-scripted comment so the thread reads like Reddit (figure-to-figure
+    /// crossovers); otherwise it stays top-level.
+    /// </summary>
+    public static void ThreadUnder(IReadOnlyList<Reply> existing, Reply reply, int percentChance)
+    {
+        var parents = existing.Where(r => r.Provider != AiProvider.Scripted).ToList();
+        if (parents.Count > 0 && Random.Shared.Next(100) < percentChance)
+            reply.ParentReplyId = parents[Random.Shared.Next(parents.Count)].Id;
+    }
+
     public int Share(Guid postId, Guid? replyId)
     {
         var post = _posts.Get(postId);
@@ -227,6 +239,7 @@ public sealed class PostService : IPostService
                 LogDecision(TargetKind.Reply, reply.Body, outcome, userId: null, ip: post.AuthorIp);
                 if (outcome.IsAllowed)
                 {
+                    ThreadUnder(post.Replies, reply, 55);
                     post.Replies.Add(reply);
                     _logger.LogInformation("{Figure} commented via {Provider}", reply.Figure, provider);
                 }

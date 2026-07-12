@@ -136,6 +136,24 @@ public class PostServiceTests
     }
 
     [Fact]
+    public void ThreadUnder_nests_a_reply_beneath_an_existing_non_scripted_comment()
+    {
+        var existing = new List<Reply>
+        {
+            new() { Figure = "Columbus", Provider = AiProvider.Scripted }, // never a parent
+            new() { Figure = "Newton", Provider = AiProvider.Claude }
+        };
+
+        var nested = new Reply { Figure = "Ada" };
+        PostService.ThreadUnder(existing, nested, 100);
+        Assert.Equal(existing[1].Id, nested.ParentReplyId); // Newton, not scripted Columbus
+
+        var topLevel = new Reply { Figure = "Ada" };
+        PostService.ThreadUnder(existing, topLevel, 0);
+        Assert.Null(topLevel.ParentReplyId);
+    }
+
+    [Fact]
     public void Top_posters_rank_figures_by_total_comment_karma()
     {
         var post = new Post { Body = "q" };
