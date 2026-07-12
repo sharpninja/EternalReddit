@@ -4,6 +4,7 @@ using EternalReddit.Server.Services.Moderation;
 using EternalReddit.Server.Services.RateLimiting;
 using EternalReddit.Shared.Models;
 using EternalReddit.Tests.Fakes;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace EternalReddit.Tests;
@@ -19,7 +20,7 @@ public class PostServiceTests
         var limiter = new SlidingWindowRateLimiter(new FakeClock(), rateLimit, TimeSpan.FromMinutes(1));
         var moderator = new Moderator(classifier ?? new StubClassifier(ModerationVerdict.Clean));
         var gen = generator ?? new ReplyGenerator(Array.Empty<IAiProvider>());
-        return new PostService(_posts, _users, _logs, limiter, moderator, gen, new NullFeedNotifier());
+        return new PostService(_posts, _users, _logs, limiter, moderator, gen, new NullFeedNotifier(), NullLogger<PostService>.Instance);
     }
 
     private static CreatePostRequest Req(string body, string ip = "1.1.1.1", string user = "google:abc")

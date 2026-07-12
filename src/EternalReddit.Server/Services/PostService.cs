@@ -3,6 +3,7 @@ using EternalReddit.Server.Services.Ai;
 using EternalReddit.Server.Services.Moderation;
 using EternalReddit.Server.Services.RateLimiting;
 using EternalReddit.Shared.Models;
+using Microsoft.Extensions.Logging;
 
 namespace EternalReddit.Server.Services;
 
@@ -40,6 +41,7 @@ public sealed class PostService : IPostService
     private readonly IModerator _moderator;
     private readonly IReplyGenerator _generator;
     private readonly IFeedNotifier _notifier;
+    private readonly ILogger<PostService> _logger;
 
     public PostService(
         IPostStore posts,
@@ -48,7 +50,8 @@ public sealed class PostService : IPostService
         IRateLimiter rateLimiter,
         IModerator moderator,
         IReplyGenerator generator,
-        IFeedNotifier notifier)
+        IFeedNotifier notifier,
+        ILogger<PostService> logger)
     {
         _posts = posts;
         _users = users;
@@ -57,6 +60,7 @@ public sealed class PostService : IPostService
         _moderator = moderator;
         _generator = generator;
         _notifier = notifier;
+        _logger = logger;
     }
 
     public IReadOnlyList<Post> GetRecent(int count = 50) => _posts.GetRecent(count);
@@ -107,6 +111,7 @@ public sealed class PostService : IPostService
             CreatedUtc = DateTime.UtcNow
         };
         _posts.Add(post);
+        _logger.LogInformation("Post created by {Author}", string.IsNullOrWhiteSpace(post.AuthorName) ? "anonymous" : post.AuthorName);
 
         // The running gag: Christopher Columbus is always first.
         post.Replies.Insert(0, new Reply
@@ -213,20 +218,28 @@ public sealed class PostService : IPostService
         var rotation = new RoundRobinSelector(_generator.Available);
         for (var i = 0; i < ReplyCount; i++)
         {
+            var provider = rotation.Next();
             try
             {
-                var reply = await _generator.GenerateReplyAsync(post, rotation.Next(), isBackground: false, ct);
+                var reply = await _generator.GenerateReplyAsync(post, provider, isBackground: false, ct);
 
                 var outcome = await _moderator.ReviewAsync(reply.Body, ct);
                 LogDecision(TargetKind.Reply, reply.Body, outcome, userId: null, ip: post.AuthorIp);
                 if (outcome.IsAllowed)
+                {
                     post.Replies.Add(reply);
+                    _logger.LogInformation("{Figure} commented via {Provider}", reply.Figure, provider);
+                }
+                else
+                {
+                    _logger.LogWarning("Reply from {Provider} blocked: {Verdict}", provider, outcome.Verdict);
+                }
             }
             catch (Exception ex)
             {
                 // A single provider hiccup (rate limit, transient 5xx, bad JSON) must not
-                // fail the user's post. Surface it to the container log and keep going.
-                Console.Error.WriteLine($"[reply-gen] post {post.Id} provider error: {ex.Message}");
+                // fail the user's post.
+                _logger.LogError(ex, "Reply generation via {Provider} failed", provider);
             }
         }
 

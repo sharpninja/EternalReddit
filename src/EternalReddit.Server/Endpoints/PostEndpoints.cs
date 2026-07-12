@@ -58,6 +58,10 @@ public static class PostEndpoints
         app.MapGet("/api/top-posters", (IPostService svc, int? count) =>
             Results.Ok(svc.GetTopPosters(count is > 0 ? count.Value : 10)));
 
+        // --- Anonymous read: recent server activity for the /logs page ---
+        app.MapGet("/api/logs", (Services.InMemoryLogSink sink, int? count) =>
+            Results.Ok(sink.Recent(count is > 0 ? count.Value : 200)));
+
         return app;
     }
 

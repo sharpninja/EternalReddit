@@ -18,6 +18,11 @@ builder.Services.AddControllers();
 builder.Services.AddHttpClient();
 builder.Services.AddHealthChecks();
 
+// --- In-app log capture (surfaced on the /logs page) ---
+var logSink = new InMemoryLogSink();
+builder.Services.AddSingleton(logSink);
+builder.Logging.AddProvider(new InMemoryLoggerProvider(logSink));
+
 // --- Data (LiteDB) ---
 builder.Services.AddSingleton<LiteDbContext>();
 builder.Services.AddSingleton<IPostStore, LiteDbPostStore>();

@@ -1,0 +1,59 @@
+@page "/logs"
+@implements IDisposable
+@inject EternalRedditApi Api
+
+<PageTitle>Logs - r/AllOfHistory</PageTitle>
+
+<div class="logs-head">
+    <h2 class="logs-title">Activity Log</h2>
+    <label class="logs-auto"><input type="checkbox" @bind="_auto" /> auto-refresh</label>
+    <button class="link" @onclick="Refresh">Refresh</button>
+    <a class="link" href="">&larr; feed</a>
+</div>
+
+@if (_events.Count == 0)
+{
+    <p class="dim">No log entries yet. Post something or wait for the background service to comment.</p>
+}
+else
+{
+    <div class="logs-scroll">
+        <table class="logs">
+            <tbody>
+                @foreach (var e in _events)
+                {
+                    <tr class="log-@e.Level.ToLowerInvariant()">
+                        <td class="log-time">@e.Utc.ToLocalTime().ToString("HH:mm:ss")</td>
+                        <td class="log-level">@e.Level</td>
+                        <td class="log-cat">@e.Category</td>
+                        <td class="log-msg">@e.Message</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private IReadOnlyList<AppEvent> _events = Array.Empty<AppEvent>();
+    private bool _auto = true;
+    private System.Threading.Timer? _timer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Refresh();
+        _timer = new System.Threading.Timer(async _ =>
+        {
+            if (_auto) await InvokeAsync(Refresh);
+        }, null, 3000, 3000);
+    }
+
+    private async Task Refresh()
+    {
+        try { _events = await Api.GetLogsAsync(300); }
+        catch { /* logs are best-effort */ }
+        StateHasChanged();
+    }
+
+    public void Dispose() => _timer?.Dispose();
+}

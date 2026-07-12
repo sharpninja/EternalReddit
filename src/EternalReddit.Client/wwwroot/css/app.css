@@ -140,3 +140,24 @@ a { color: inherit; text-decoration: none; }
 .blazor-error-boundary {
     background: #b32121; padding: 1rem; color: white;
 }
+
+/* ---- top nav link ---- */
+.navlink { color: var(--dim); font-size: 0.85rem; font-weight: 600; margin-right: 4px; }
+.navlink:hover { color: var(--accent); }
+
+/* ---- logs page ---- */
+.logs-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
+.logs-title { font-size: 1.15rem; margin: 0; }
+.logs-auto { font-size: 0.8rem; color: var(--dim); }
+.logs-scroll { overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
+table.logs { width: 100%; border-collapse: collapse; font-size: 0.82rem; font-family: 'Consolas', 'Courier New', monospace; }
+table.logs td { padding: 4px 10px; border-top: 1px solid var(--line); vertical-align: top; }
+table.logs tr:first-child td { border-top: none; }
+.log-time, .log-level, .log-cat { white-space: nowrap; }
+.log-time { color: var(--dim); }
+.log-level { font-weight: 700; }
+.log-cat { color: var(--grok); }
+.log-msg { width: 100%; }
+.log-error .log-level { color: #e5484d; }
+.log-warning .log-level { color: #f5a623; }
+.log-information .log-level { color: var(--openai); }
