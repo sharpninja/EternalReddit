@@ -9,6 +9,7 @@ using EternalReddit.Server.Services.Moderation;
 using EternalReddit.Server.Services.RateLimiting;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -114,7 +115,25 @@ if (!string.IsNullOrWhiteSpace(githubClientId))
 
 builder.Services.AddAuthorization();
 
+// Behind ngrok (or any reverse proxy): honor X-Forwarded-Proto/Host so the
+// OIDC handler builds redirect URIs with the public https host
+// (https://sharpninja.ngrok.app/signin-oidc) instead of the internal one.
+builder.Services.Configure<ForwardedHeadersOptions>(o =>
+{
+    o.ForwardedHeaders = ForwardedHeaders.XForwardedFor
+        | ForwardedHeaders.XForwardedProto
+        | ForwardedHeaders.XForwardedHost;
+    // The proxy (ngrok container) is on an untrusted network from ASP.NET's
+    // default view, so clear the allow-lists to accept its forwarded headers.
+    o.KnownNetworks.Clear();
+    o.KnownProxies.Clear();
+});
+
 var app = builder.Build();
+
+// Must run before any middleware that reads the scheme/host (HTTPS redirect,
+// authentication, OIDC challenge).
+app.UseForwardedHeaders();
 
 if (app.Environment.IsDevelopment())
 {
