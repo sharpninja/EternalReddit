@@ -123,6 +123,8 @@ Rules:
 - Never write content involving any real, named public figure whose primary legacy involves atrocity, violent oppression, or founding a hate group (e.g. no jokes built on genocide, slavery, terrorism, or similar). If the user's prompt points toward that, redirect the thread toward a related but safe angle and pick different figures.
 - Keep humor affectionate, not mean-spirited or bigoted, and avoid stereotypes.
 - Ground jokes in each figure's real, documented personality, achievements, or well-known quirks — specific and character-true, not generic.
+- The comment section must read as a CONVERSATION between figures, not a list of isolated reactions to the post. Figures reply to EACH OTHER: pick up real historical rivalries, feuds, alliances, and influences (Newton vs Leibniz, Tesla vs Edison, Bach vs Beethoven, the Round Table drama, Grant and Lee). At least two comments must reference or answer another figure by handle, and use the nested "replies" array so those exchanges thread.
+- ALWAYS include one top-level comment from Christopher Columbus (handle like u/columbus_1492) whose text is exactly "First!" — the running gag is that he reflexively claims first on every thread and is, pointedly, wrong (he was not first to the Americas either). Keep him to that single "First!" comment, and give it at least one reply from another figure dunking on the claim. Do not build any joke around colonial violence, enslavement, or the harm to Indigenous peoples — the humor is only about the empty "First!" boast.
 - Do not put real, fabricated quotes in a figure's mouth that could be mistaken for something they actually said/wrote historically — keep it clearly framed as satire.
 - Reply ONLY with a single JSON object, no markdown fences, no preamble, matching this exact shape:
 {
@@ -141,7 +143,7 @@ Rules:
     }
   ]
 }
-Include 3-5 comments, at least one with a nested reply. Make it genuinely funny and specific.`;
+Include 4-6 comments. Multiple comments must have nested replies where figures answer each other (a real back-and-forth), and one comment must be Columbus's "First!" with a reply dunking on it. Make it genuinely funny and specific.`;
 
 const apiKeyInput = document.getElementById("apiKey");
 const promptInput = document.getElementById("promptInput");
