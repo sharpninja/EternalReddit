@@ -41,13 +41,15 @@ public sealed class InMemoryLoggerProvider : ILoggerProvider
     private sealed class InMemoryLogger : ILogger
     {
         private readonly InMemoryLogSink _sink;
-        private readonly string _category;
+        private readonly string _full;
+        private readonly string _short;
 
         public InMemoryLogger(InMemoryLogSink sink, string category)
         {
             _sink = sink;
+            _full = category;
             // Show the short type name, not the full namespace.
-            _category = category.Contains('.') ? category[(category.LastIndexOf('.') + 1)..] : category;
+            _short = category.Contains('.') ? category[(category.LastIndexOf('.') + 1)..] : category;
         }
 
         public IDisposable BeginScope<TState>(TState state) where TState : notnull => NullScope.Instance;
@@ -57,9 +59,15 @@ public sealed class InMemoryLoggerProvider : ILoggerProvider
             Func<TState, Exception?, string> formatter)
         {
             if (!IsEnabled(logLevel)) return;
+
+            // Keep the app's own logs; from the framework keep only warnings/errors, so
+            // per-request HTTP noise (health checks, etc.) doesn't drown the page.
+            var isApp = _full.StartsWith("EternalReddit", StringComparison.Ordinal);
+            if (!isApp && logLevel < LogLevel.Warning) return;
+
             var msg = formatter(state, ex);
             if (ex is not null) msg += " | " + ex.Message;
-            _sink.Add(new AppEvent(DateTime.UtcNow, logLevel.ToString(), _category, msg));
+            _sink.Add(new AppEvent(DateTime.UtcNow, logLevel.ToString(), _short, msg));
         }
     }
 }
