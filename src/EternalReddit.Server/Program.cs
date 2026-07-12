@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using EternalReddit.Server.Data;
+using EternalReddit.Server.Data.Seeding;
 using EternalReddit.Server.Endpoints;
 using EternalReddit.Server.Hubs;
 using EternalReddit.Server.Services;
@@ -38,6 +39,10 @@ builder.Services.AddSingleton<LiteDbContext>();
 builder.Services.AddSingleton<IPostStore, LiteDbPostStore>();
 builder.Services.AddSingleton<IUserStore, LiteDbUserStore>();
 builder.Services.AddSingleton<IModerationLogStore, LiteDbModerationLogStore>();
+builder.Services.AddSingleton<IPeerGroupStore, LiteDbPeerGroupStore>();
+builder.Services.AddSingleton<IFigureStore, LiteDbFigureStore>();
+builder.Services.AddSingleton<ICommunityStore, LiteDbCommunityStore>();
+builder.Services.AddSingleton<ISettingsStore, LiteDbSettingsStore>();
 
 // --- Core services ---
 builder.Services.AddSingleton<IClock, EternalReddit.Server.Services.SystemClock>();
@@ -242,6 +247,13 @@ app.MapGet("/api/me", async (HttpContext http, IAuthenticationSchemeProvider sch
 });
 
 app.MapFallbackToFile("index.html");
+
+// Seed the default roster/communities (idempotent) BEFORE the purge, which validates
+// existing replies against the roster.
+RosterSeed.EnsureSeeded(
+    app.Services.GetRequiredService<IPeerGroupStore>(),
+    app.Services.GetRequiredService<IFigureStore>(),
+    app.Services.GetRequiredService<ICommunityStore>());
 
 // One-time cleanup on startup: drop any legacy comments from non-approved figures.
 try { app.Services.GetRequiredService<IPostService>().PurgeUnapproved(); } catch { }

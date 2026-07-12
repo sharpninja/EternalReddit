@@ -15,6 +15,9 @@ public sealed class Post
     /// <summary>Source IP, captured for rate limiting and moderation records.</summary>
     public string AuthorIp { get; set; } = "";
 
+    /// <summary>The community ("sub") slug this post belongs to. Empty = the default feed.</summary>
+    public string Community { get; set; } = "";
+
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
 
     public int Upvotes { get; set; }

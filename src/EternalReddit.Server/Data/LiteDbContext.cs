@@ -1,3 +1,4 @@
+using EternalReddit.Shared.Models;
 using LiteDB;
 
 namespace EternalReddit.Server.Data;
@@ -28,6 +29,11 @@ public sealed class LiteDbContext : IDisposable
         mapper.RegisterType<DateTime>(
             dt => dt.ToUniversalTime().Ticks,
             bson => new DateTime(bson.AsInt64, DateTimeKind.Utc));
+
+        // Descriptive string ids for the roster/community collections.
+        mapper.Entity<Figure>().Id(f => f.Name);
+        mapper.Entity<Community>().Id(c => c.Slug);
+        mapper.Entity<PeerGroup>().Id(g => g.Slug);
         return mapper;
     }
 
