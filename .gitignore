@@ -57,6 +57,15 @@ coverage/
 *.zip
 *.tar.gz
 
+# .NET build output (EternalX.Blazor solution)
+[Bb]in/
+[Oo]bj/
+*.user
+[Dd]ebug/
+[Rr]elease/
+data/
+*.db-log
+
 # MCP Server workspace local state (managed by the server, not source)
 AGENTS-README-FIRST.yaml
 .mcpServer/

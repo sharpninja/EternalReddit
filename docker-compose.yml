@@ -1,0 +1,26 @@
+services:
+  eternalx:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+    env_file:
+      - .env
+    volumes:
+      - eternalx-data:/app/data
+    restart: unless-stopped
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    command: http eternalx:8080
+    env_file:
+      - .env
+    ports:
+      - "4040:4040"
+    depends_on:
+      - eternalx
+
+volumes:
+  eternalx-data:
