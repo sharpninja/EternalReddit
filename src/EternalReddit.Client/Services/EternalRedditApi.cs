@@ -18,11 +18,17 @@ public sealed class EternalRedditApi
     public Task<HttpResponseMessage> CreatePostAsync(string? title, string body)
         => _http.PostAsJsonAsync("api/posts", new CreatePostBody(title, body));
 
-    public async Task<bool> VotePostAsync(Guid postId, string dir)
-        => (await _http.PostAsync($"api/posts/{postId}/vote?dir={dir}", null)).IsSuccessStatusCode;
+    public async Task<VoteResult?> VotePostAsync(Guid postId, string dir)
+    {
+        var res = await _http.PostAsync($"api/posts/{postId}/vote?dir={dir}", null);
+        return res.IsSuccessStatusCode ? await res.Content.ReadFromJsonAsync<VoteResult>() : null;
+    }
 
-    public async Task<bool> VoteReplyAsync(Guid postId, Guid replyId, string dir)
-        => (await _http.PostAsync($"api/posts/{postId}/replies/{replyId}/vote?dir={dir}", null)).IsSuccessStatusCode;
+    public async Task<VoteResult?> VoteReplyAsync(Guid postId, Guid replyId, string dir)
+    {
+        var res = await _http.PostAsync($"api/posts/{postId}/replies/{replyId}/vote?dir={dir}", null);
+        return res.IsSuccessStatusCode ? await res.Content.ReadFromJsonAsync<VoteResult>() : null;
+    }
 
     public async Task<int> SharePostAsync(Guid postId, Guid? replyId = null)
     {

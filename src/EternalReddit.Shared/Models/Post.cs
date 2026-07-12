@@ -23,5 +23,8 @@ public sealed class Post
 
     public List<Reply> Replies { get; set; } = new();
 
+    /// <summary>One vote per user per target (this post or one of its replies).</summary>
+    public List<Vote> Votes { get; set; } = new();
+
     public int Score => Upvotes - Downvotes;
 }

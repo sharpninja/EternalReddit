@@ -40,11 +40,11 @@ public static class PostEndpoints
             };
         }).RequireAuthorization();
 
-        group.MapPost("/{id:guid}/vote", (IPostService svc, Guid id, string dir) => Vote(svc, id, null, dir))
-            .RequireAuthorization();
+        group.MapPost("/{id:guid}/vote", (IPostService svc, HttpContext http, Guid id, string dir) =>
+            Vote(svc, http, id, null, dir)).RequireAuthorization();
 
-        group.MapPost("/{id:guid}/replies/{replyId:guid}/vote", (IPostService svc, Guid id, Guid replyId, string dir) =>
-            Vote(svc, id, replyId, dir)).RequireAuthorization();
+        group.MapPost("/{id:guid}/replies/{replyId:guid}/vote", (IPostService svc, HttpContext http, Guid id, Guid replyId, string dir) =>
+            Vote(svc, http, id, replyId, dir)).RequireAuthorization();
 
         group.MapPost("/{id:guid}/share", (IPostService svc, Guid id, Guid? replyId) =>
         {
@@ -57,10 +57,11 @@ public static class PostEndpoints
         return app;
     }
 
-    private static IResult Vote(IPostService svc, Guid id, Guid? replyId, string dir)
+    private static IResult Vote(IPostService svc, HttpContext http, Guid id, Guid? replyId, string dir)
     {
         if (!TryParseDir(dir, out var kind)) return Results.BadRequest("dir must be 'up' or 'down'.");
-        return svc.Vote(id, replyId, kind) ? Results.Ok() : Results.NotFound();
+        var outcome = svc.Vote(id, replyId, AuthorId(http), kind);
+        return outcome is null ? Results.NotFound() : Results.Ok(outcome);
     }
 
     private static string AuthorId(HttpContext http)

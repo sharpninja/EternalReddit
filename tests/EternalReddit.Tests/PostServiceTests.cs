@@ -80,17 +80,47 @@ public class PostServiceTests
     }
 
     [Fact]
-    public async Task Vote_adjusts_score()
+    public async Task One_user_gets_one_vote_that_toggles_and_switches()
     {
         var svc = Build();
-        var created = await svc.CreateAsync(Req("hello"));
-        var id = created.Post!.Id;
+        var id = (await svc.CreateAsync(Req("hello"))).Post!.Id;
 
-        Assert.True(svc.Vote(id, null, VoteKind.Up));
-        Assert.True(svc.Vote(id, null, VoteKind.Up));
-        Assert.True(svc.Vote(id, null, VoteKind.Down));
+        // Repeated upvotes never stack past one.
+        Assert.Equal(1, svc.Vote(id, null, "u1", VoteKind.Up)!.Score);
+        // Same arrow again toggles the vote off.
+        var off = svc.Vote(id, null, "u1", VoteKind.Up)!;
+        Assert.Equal(0, off.Score);
+        Assert.Null(off.UserVote);
+        // Up then down switches (net -1), it does not add a second vote.
+        Assert.Equal(1, svc.Vote(id, null, "u1", VoteKind.Up)!.Score);
+        var switched = svc.Vote(id, null, "u1", VoteKind.Down)!;
+        Assert.Equal(-1, switched.Score);
+        Assert.Equal("down", switched.UserVote);
+    }
 
-        Assert.Equal(1, svc.Get(id)!.Score);
+    [Fact]
+    public async Task Distinct_users_each_get_their_own_vote()
+    {
+        var svc = Build();
+        var id = (await svc.CreateAsync(Req("hello"))).Post!.Id;
+
+        svc.Vote(id, null, "u1", VoteKind.Up);
+        Assert.Equal(2, svc.Vote(id, null, "u2", VoteKind.Up)!.Score);
+    }
+
+    [Fact]
+    public async Task Reply_votes_are_deduped_per_user()
+    {
+        var gen = new ReplyGenerator(new[]
+        {
+            new FakeAiProvider(AiProvider.Claude, "{\"figure\":\"Newton\",\"body\":\"Mine.\"}")
+        });
+        var svc = Build(gen);
+        var post = (await svc.CreateAsync(Req("q"))).Post!;
+        var replyId = post.Replies[0].Id;
+
+        Assert.Equal(1, svc.Vote(post.Id, replyId, "u1", VoteKind.Up)!.Score);
+        Assert.Equal(0, svc.Vote(post.Id, replyId, "u1", VoteKind.Up)!.Score);
     }
 
     [Fact]
@@ -104,6 +134,6 @@ public class PostServiceTests
     }
 
     [Fact]
-    public void Vote_on_missing_post_returns_false()
-        => Assert.False(Build().Vote(Guid.NewGuid(), null, VoteKind.Up));
+    public void Vote_on_missing_post_returns_null()
+        => Assert.Null(Build().Vote(Guid.NewGuid(), null, "u1", VoteKind.Up));
 }

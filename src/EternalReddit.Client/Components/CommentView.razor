@@ -31,8 +31,8 @@
 
     private async Task Vote(string dir)
     {
-        if (dir == "up") Reply.Upvotes++; else Reply.Downvotes++;
-        await Api.VoteReplyAsync(PostId, Reply.Id, dir);
+        var r = await Api.VoteReplyAsync(PostId, Reply.Id, dir);
+        if (r is not null) { Reply.Upvotes = r.Upvotes; Reply.Downvotes = r.Downvotes; }
     }
 
     private static string Ago(DateTime utc)

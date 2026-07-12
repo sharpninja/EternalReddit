@@ -22,7 +22,7 @@ public sealed record CreatePostResult(CreatePostStatus Status, Post? Post, strin
 public interface IPostService
 {
     Task<CreatePostResult> CreateAsync(CreatePostRequest request, CancellationToken ct = default);
-    bool Vote(Guid postId, Guid? replyId, VoteKind kind);
+    VoteResult? Vote(Guid postId, Guid? replyId, string userId, VoteKind kind);
     int Share(Guid postId, Guid? replyId);
     IReadOnlyList<Post> GetRecent(int count = 50);
     Post? Get(Guid id);
@@ -101,25 +101,67 @@ public sealed class PostService : IPostService
         return CreatePostResult.Created(post);
     }
 
-    public bool Vote(Guid postId, Guid? replyId, VoteKind kind)
+    public VoteResult? Vote(Guid postId, Guid? replyId, string userId, VoteKind kind)
     {
+        if (string.IsNullOrWhiteSpace(userId)) return null;
+
         var post = _posts.Get(postId);
-        if (post is null) return false;
+        if (post is null) return null;
+
+        // Resolve the target (the post itself or one of its replies) into a common
+        // shape so the tally logic doesn't branch on post-vs-reply.
+        Guid targetId;
+        TargetKind targetKind;
+        Func<int> upvotes, downvotes;
+        Action<int> addUp, addDown;
 
         if (replyId is null)
         {
-            Apply(kind, () => post.Upvotes++, () => post.Downvotes++);
+            targetId = post.Id;
+            targetKind = TargetKind.Post;
+            upvotes = () => post.Upvotes; downvotes = () => post.Downvotes;
+            addUp = d => post.Upvotes += d; addDown = d => post.Downvotes += d;
         }
         else
         {
             var reply = post.Replies.FirstOrDefault(r => r.Id == replyId.Value);
-            if (reply is null) return false;
-            Apply(kind, () => reply.Upvotes++, () => reply.Downvotes++);
+            if (reply is null) return null;
+            targetId = reply.Id;
+            targetKind = TargetKind.Reply;
+            upvotes = () => reply.Upvotes; downvotes = () => reply.Downvotes;
+            addUp = d => reply.Upvotes += d; addDown = d => reply.Downvotes += d;
+        }
+
+        var existing = post.Votes.FirstOrDefault(v => v.UserId == userId && v.TargetId == targetId);
+        string? userVote;
+
+        if (existing is null)
+        {
+            // First vote from this user on this target.
+            if (kind == VoteKind.Up) addUp(1); else addDown(1);
+            post.Votes.Add(new Vote { UserId = userId, TargetId = targetId, TargetKind = targetKind, Kind = kind });
+            userVote = Label(kind);
+        }
+        else if (existing.Kind == kind)
+        {
+            // Same arrow again: toggle the vote off.
+            if (kind == VoteKind.Up) addUp(-1); else addDown(-1);
+            post.Votes.Remove(existing);
+            userVote = null;
+        }
+        else
+        {
+            // Switch from up to down (or vice-versa): one moves off, the other on.
+            if (existing.Kind == VoteKind.Up) { addUp(-1); addDown(1); } else { addDown(-1); addUp(1); }
+            existing.Kind = kind;
+            userVote = Label(kind);
         }
 
         _posts.Update(post);
-        return true;
+        return new VoteResult(upvotes(), downvotes(), upvotes() - downvotes(), userVote);
     }
+
+    private static string Label(VoteKind kind) => kind == VoteKind.Up ? "up" : "down";
 
     public int Share(Guid postId, Guid? replyId)
     {
@@ -189,8 +231,4 @@ public sealed class PostService : IPostService
             Ip = ip
         });
 
-    private static void Apply(VoteKind kind, Action up, Action down)
-    {
-        if (kind == VoteKind.Up) up(); else down();
-    }
 }
