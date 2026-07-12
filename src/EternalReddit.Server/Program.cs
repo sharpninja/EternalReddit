@@ -9,6 +9,7 @@ using EternalReddit.Server.Services.Moderation;
 using EternalReddit.Server.Services.RateLimiting;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,6 +23,15 @@ builder.Services.AddHealthChecks();
 var logSink = new InMemoryLogSink();
 builder.Services.AddSingleton(logSink);
 builder.Logging.AddProvider(new InMemoryLoggerProvider(logSink));
+
+// Persist DataProtection keys to the mounted /app/data volume (Production only)
+// so auth cookies survive container restarts; otherwise every redeploy would
+// regenerate the keys and log everyone out.
+if (builder.Environment.IsProduction())
+{
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo("/app/data/keys"));
+}
 
 // --- Data (LiteDB) ---
 builder.Services.AddSingleton<LiteDbContext>();
