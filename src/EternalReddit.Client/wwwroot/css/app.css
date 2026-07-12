@@ -47,6 +47,9 @@ a { color: inherit; text-decoration: none; }
     padding: 6px 14px; border-radius: 999px; border: none; cursor: pointer;
 }
 .topbar .login { margin-left: 6px; }
+/* PWA install button: outlined variant of .login, only shown when installable */
+.pwa-install { background: none; color: var(--accent); border: 1px solid var(--accent); }
+.pwa-install:hover { background: var(--accent); color: #fff; }
 .inline-form { display: inline; }
 .content { max-width: 1040px; margin: 18px auto; padding: 0 12px; }
 

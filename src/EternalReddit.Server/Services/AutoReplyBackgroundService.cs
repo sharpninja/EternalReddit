@@ -13,9 +13,11 @@ public sealed class AutoReplyBackgroundService : BackgroundService
 {
     private static readonly TimeSpan Interval = TimeSpan.FromSeconds(4);
     private static readonly TimeSpan Window = TimeSpan.FromHours(24);
-    // A thread only earns a reply once its last message is this old, so the AI
-    // responds ~10s after the last message rather than on a fixed drumbeat.
-    private static readonly TimeSpan QuietSince = TimeSpan.FromSeconds(10);
+    // A thread earns a reply once its last message is at least QuietFor(thread)
+    // old - a per-thread value randomised between these bounds so figures answer
+    // on a natural, varied delay rather than a fixed beat.
+    private const int MinQuietSeconds = 10;
+    private const int MaxQuietSeconds = 90;
 
     private readonly IPostStore _posts;
     private readonly IPostService _service;
@@ -73,7 +75,7 @@ public sealed class AutoReplyBackgroundService : BackgroundService
         // The menu: every thread active in the last 24h, sorted by activity in the last hour.
         var candidates = _posts.GetRecent(80)
             .Where(p => Active(p, since))
-            .Where(p => now - LatestActivity(p) >= QuietSince) // wait 10s since the thread's last message
+            .Where(p => now - LatestActivity(p) >= QuietFor(p)) // wait out this thread's randomised quiet gap
             .OrderByDescending(p => ActivityLastHour(p, now))
             .ThenByDescending(LatestActivity)
             .Take(12)
@@ -112,6 +114,16 @@ public sealed class AutoReplyBackgroundService : BackgroundService
 
     private static DateTime LatestActivity(Post p)
         => p.Replies.Count == 0 ? p.CreatedUtc : p.Replies.Max(r => r.CreatedUtc);
+
+    // Per-thread quiet gap (MinQuietSeconds..MaxQuietSeconds), derived deterministically
+    // from the thread id and its last-message time: stable across the 4s ticks and
+    // re-rolled whenever a new message lands, so replies land on a varied delay.
+    private static TimeSpan QuietFor(Post p)
+    {
+        var seed = unchecked((p.Id.GetHashCode() * 397) ^ LatestActivity(p).Ticks.GetHashCode());
+        var span = MinQuietSeconds + (int)((uint)seed % (MaxQuietSeconds - MinQuietSeconds + 1));
+        return TimeSpan.FromSeconds(span);
+    }
 
     private static string MenuLine(Post p, int n, DateTime now)
     {

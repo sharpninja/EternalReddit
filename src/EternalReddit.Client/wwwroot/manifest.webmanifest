@@ -1,0 +1,15 @@
+{
+  "name": "EternalReddit - r/AllOfHistory",
+  "short_name": "EternalReddit",
+  "description": "History's cast, arguing in the comments.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f6f7f8",
+  "theme_color": "#ff4500",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" }
+  ]
+}

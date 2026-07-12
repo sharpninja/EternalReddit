@@ -1,0 +1,55 @@
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+@if (_show)
+{
+    <button class="login pwa-install" @onclick="InstallAsync" title="Install EternalReddit as an app">&#128229; Install</button>
+}
+
+@code {
+    private bool _show;
+    private DotNetObjectReference<PwaInstall>? _ref;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        try
+        {
+            _ref = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("pwa.register", _ref);
+            await RefreshAsync();
+        }
+        catch { /* JS not ready or unsupported: leave the button hidden */ }
+    }
+
+    [JSInvokable]
+    public Task OnPwaChanged() => RefreshAsync();
+
+    private async Task RefreshAsync()
+    {
+        try
+        {
+            var standalone = await JS.InvokeAsync<bool>("pwa.isStandalone");
+            var canInstall = await JS.InvokeAsync<bool>("pwa.canInstall");
+            var show = canInstall && !standalone;
+            if (show != _show) { _show = show; StateHasChanged(); }
+        }
+        catch { /* ignore: keep current visibility */ }
+    }
+
+    private async Task InstallAsync()
+    {
+        try
+        {
+            var outcome = await JS.InvokeAsync<string>("pwa.prompt");
+            if (outcome is "accepted" or "unavailable") { _show = false; StateHasChanged(); }
+        }
+        catch { /* user dismissed or prompt failed */ }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try { await JS.InvokeVoidAsync("pwa.unregister"); } catch { /* teardown */ }
+        _ref?.Dispose();
+    }
+}

@@ -9,6 +9,11 @@
     <link rel="preload" id="webassembly" />
     <link rel="stylesheet" href="css/app.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta name="theme-color" content="#ff4500" />
+    <link rel="apple-touch-icon" href="icon-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="EternalReddit" />
     <script type="importmap"></script>
 </head>
 
@@ -27,6 +32,40 @@
         <span class="dismiss">🗙</span>
     </div>
     <script src="_framework/blazor.webassembly.js"></script>
+    <script>
+        // PWA install plumbing: capture the browser's install prompt and expose a
+        // tiny API the toolbar button (PwaInstall.razor) can query and trigger.
+        (function () {
+            const state = { deferred: null, dotnet: null };
+            function notify() { if (state.dotnet) { try { state.dotnet.invokeMethodAsync('OnPwaChanged'); } catch (e) { } } }
+            window.addEventListener('beforeinstallprompt', function (e) {
+                e.preventDefault();
+                state.deferred = e;
+                notify();
+            });
+            window.addEventListener('appinstalled', function () { state.deferred = null; notify(); });
+            window.pwa = {
+                canInstall: function () { return !!state.deferred; },
+                isStandalone: function () {
+                    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+                },
+                register: function (dotnet) { state.dotnet = dotnet; },
+                unregister: function () { state.dotnet = null; },
+                prompt: async function () {
+                    if (!state.deferred) return 'unavailable';
+                    state.deferred.prompt();
+                    const choice = await state.deferred.userChoice;
+                    state.deferred = null;
+                    return choice.outcome; // 'accepted' | 'dismissed'
+                }
+            };
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function () {
+                    navigator.serviceWorker.register('service-worker.js').catch(function () { });
+                });
+            }
+        })();
+    </script>
 </body>
 
 </html>
