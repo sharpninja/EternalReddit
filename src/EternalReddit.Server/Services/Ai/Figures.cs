@@ -17,7 +17,9 @@ public static class Figures
         "Confucius", "Immanuel Kant", "Simone de Beauvoir", "Leonardo da Vinci",
         "William Shakespeare", "Jane Austen", "Mary Shelley", "Mark Twain",
         "Frida Kahlo", "Vincent van Gogh", "Amelia Earhart", "Benjamin Franklin",
-        "Mary Somerville", "Émilie du Châtelet"
+        "Mary Somerville", "Émilie du Châtelet",
+        "Ronald Reagan", "Mahatma Gandhi", "John Wayne", "George Lucas",
+        "Mick Jagger", "David Bowie"
     };
 
     /// <summary>Pick a random approved figure, optionally avoiding one (e.g. the parent commenter).</summary>
