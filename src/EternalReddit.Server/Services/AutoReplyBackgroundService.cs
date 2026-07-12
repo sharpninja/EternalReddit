@@ -11,8 +11,11 @@ namespace EternalReddit.Server.Services;
 /// </summary>
 public sealed class AutoReplyBackgroundService : BackgroundService
 {
-    private static readonly TimeSpan Interval = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan Interval = TimeSpan.FromSeconds(4);
     private static readonly TimeSpan Window = TimeSpan.FromHours(24);
+    // A thread only earns a reply once its last message is this old, so the AI
+    // responds ~10s after the last message rather than on a fixed drumbeat.
+    private static readonly TimeSpan QuietSince = TimeSpan.FromSeconds(10);
 
     private readonly IPostStore _posts;
     private readonly IPostService _service;
@@ -70,6 +73,7 @@ public sealed class AutoReplyBackgroundService : BackgroundService
         // The menu: every thread active in the last 24h, sorted by activity in the last hour.
         var candidates = _posts.GetRecent(80)
             .Where(p => Active(p, since))
+            .Where(p => now - LatestActivity(p) >= QuietSince) // wait 10s since the thread's last message
             .OrderByDescending(p => ActivityLastHour(p, now))
             .ThenByDescending(LatestActivity)
             .Take(12)
