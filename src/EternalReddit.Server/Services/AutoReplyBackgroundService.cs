@@ -1,17 +1,18 @@
 using EternalReddit.Server.Data;
 using EternalReddit.Server.Services.Ai;
+using EternalReddit.Shared.Models;
 
 namespace EternalReddit.Server.Services;
 
 /// <summary>
-/// Every 10 seconds, picks a recently-active-but-quiet thread and adds one
-/// moderated, approved-figure reply, keeping conversations going.
+/// Every 10 seconds, shows the AI the last-24h threads (sorted by activity over
+/// the last hour) and lets it decide which conversation to jump into with one
+/// moderated, approved-figure comment.
 /// </summary>
 public sealed class AutoReplyBackgroundService : BackgroundService
 {
     private static readonly TimeSpan Interval = TimeSpan.FromSeconds(10);
-    private static readonly TimeSpan QuietFor = TimeSpan.FromMinutes(2);
-    private static readonly TimeSpan ActiveWithin = TimeSpan.FromMinutes(30);
+    private static readonly TimeSpan Window = TimeSpan.FromHours(24);
 
     private readonly IPostStore _posts;
     private readonly IPostService _service;
@@ -63,14 +64,56 @@ public sealed class AutoReplyBackgroundService : BackgroundService
 
     private async Task TickAsync(CancellationToken ct)
     {
-        var thread = AutoReplySelector.SelectThread(_posts.GetRecent(20), DateTime.UtcNow, QuietFor, ActiveWithin);
-        if (thread is null) return;
+        var now = DateTime.UtcNow;
+        var since = now - Window;
 
-        var reply = await _service.GenerateReplyInto(thread, _rotation!.Next(), ct);
+        // The menu: every thread active in the last 24h, sorted by activity in the last hour.
+        var candidates = _posts.GetRecent(80)
+            .Where(p => Active(p, since))
+            .OrderByDescending(p => ActivityLastHour(p, now))
+            .ThenByDescending(LatestActivity)
+            .Take(12)
+            .ToList();
+        if (candidates.Count == 0) return;
+
+        var provider = _rotation!.Next();
+
+        // Let the AI decide which conversation to join.
+        var chosen = candidates[0];
+        if (candidates.Count > 1)
+        {
+            var menu = candidates.Select((p, i) => MenuLine(p, i + 1, now)).ToList();
+            var pick = await _generator.ChooseAsync(menu,
+                "You are a historical figure browsing r/AllOfHistory. From these active threads (last 24h, busiest first), choose the ONE you most want to jump into with a comment.",
+                provider, ct);
+            chosen = candidates[Math.Clamp(pick - 1, 0, candidates.Count - 1)];
+        }
+
+        var reply = await _service.GenerateReplyInto(chosen, provider, ct);
         if (reply is null) return;
 
         reply.IsBackground = true;
-        _posts.Update(thread);
+        _posts.Update(chosen);
         await _notifier.FeedChangedAsync();
+    }
+
+    private static bool Active(Post p, DateTime since)
+        => p.CreatedUtc >= since || p.Replies.Any(r => r.CreatedUtc >= since);
+
+    private static int ActivityLastHour(Post p, DateTime now)
+    {
+        var since = now.AddHours(-1);
+        return p.Replies.Count(r => r.CreatedUtc >= since) + (p.CreatedUtc >= since ? 1 : 0);
+    }
+
+    private static DateTime LatestActivity(Post p)
+        => p.Replies.Count == 0 ? p.CreatedUtc : p.Replies.Max(r => r.CreatedUtc);
+
+    private static string MenuLine(Post p, int n, DateTime now)
+    {
+        var latest = p.Replies.OrderByDescending(r => r.CreatedUtc).FirstOrDefault();
+        var snip = latest is null ? p.Body : $"{latest.Figure}: {latest.Body}";
+        if (snip.Length > 120) snip = snip[..120] + "…";
+        return $"{n}. \"{p.Title}\" by {p.AuthorName} - {p.Replies.Count} comments, {ActivityLastHour(p, now)} in the last hour. Latest - {snip}";
     }
 }

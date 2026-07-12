@@ -75,6 +75,16 @@ var authBuilder = builder.Services
     })
     .AddCookie("Cookies", options =>
     {
+        // Long-lived, persistent sessions: stay logged in indefinitely, renewed on use.
+        options.ExpireTimeSpan = TimeSpan.FromDays(365);
+        options.SlidingExpiration = true;
+        options.Events.OnSigningIn = ctx =>
+        {
+            ctx.Properties.IsPersistent = true;
+            ctx.Properties.ExpiresUtc = DateTimeOffset.UtcNow.AddDays(365);
+            return Task.CompletedTask;
+        };
+
         // The WASM client calls /api endpoints. An unauthenticated call must get
         // a 401/403, not a 302 redirect to a login page - that redirect falls
         // back to index.html (HTML, 200) and the client would then try to parse
@@ -109,6 +119,8 @@ void AddOidc(string scheme, string authority, Action<OpenIdConnectOptions>? conf
         options.ClientSecret = builder.Configuration[$"Authentication:{scheme}:ClientSecret"] ?? "";
         options.ResponseType = "code";
         options.SaveTokens = true;
+        // Don't tie the cookie's lifetime to the ~1h id_token; the cookie manages its own long life.
+        options.UseTokenLifetime = false;
         configure?.Invoke(options);
     });
 }

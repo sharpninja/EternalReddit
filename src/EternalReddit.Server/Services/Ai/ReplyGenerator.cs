@@ -25,6 +25,9 @@ public interface IReplyGenerator
 
     /// <summary>An original post in <paramref name="figure"/>'s voice.</summary>
     Task<PostDraft> GeneratePostAsync(string figure, AiProvider provider, CancellationToken ct = default);
+
+    /// <summary>Let the model pick one option (1-based) from a numbered menu; returns the chosen number.</summary>
+    Task<int> ChooseAsync(IReadOnlyList<string> options, string instruction, AiProvider provider, CancellationToken ct = default);
 }
 
 public sealed class ReplyGenerator : IReplyGenerator
@@ -57,6 +60,18 @@ public sealed class ReplyGenerator : IReplyGenerator
             "atrocity, genocide, slavery, or violent conquest. Do not fabricate real quotes. Reply with ONLY " +
             "a JSON object: {\"title\":\"a short title\",\"body\":\"1-3 sentences\"}.";
         return ParsePost(await ai.CompleteAsync(system, "Write your post now.", 400, ct));
+    }
+
+    public async Task<int> ChooseAsync(IReadOnlyList<string> options, string instruction, AiProvider provider, CancellationToken ct = default)
+    {
+        var ai = Resolve(provider);
+        var sb = new StringBuilder();
+        sb.Append(instruction).Append("\n\n");
+        foreach (var o in options) sb.Append(o).Append('\n');
+        sb.Append("\nReply with ONLY the number of your choice.");
+        var text = await ai.CompleteAsync("You choose one option from a numbered list. Answer with only the number.", sb.ToString(), 12, ct);
+        var m = System.Text.RegularExpressions.Regex.Match(text ?? "", "\\d+");
+        return m.Success && int.TryParse(m.Value, out var n) && n >= 1 ? n : 1;
     }
 
     private IAiProvider Resolve(AiProvider provider)
