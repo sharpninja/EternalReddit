@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using EternalReddit.Server.Services;
+using EternalReddit.Server.Services.Ai;
 using EternalReddit.Shared.Models;
 
 namespace EternalReddit.Server.Endpoints;
@@ -79,8 +80,18 @@ public static class PostEndpoints
                     .Where(r => r.Figure == name)
                     .Select(r => new ProfileComment(p.Id, string.IsNullOrWhiteSpace(p.Title) ? "(untitled)" : p.Title, r.Body, r.Score, r.CreatedUtc)))
                 .OrderByDescending(c => c.CreatedUtc).Take(50).ToList();
-            return Results.Ok(new UserProfile(name, posts.Count, comments.Count,
+            return Results.Ok(new UserProfile(name, Figures.Persona(name), posts.Count, comments.Count,
                 posts.Sum(p => p.Score), comments.Sum(c => c.Score), posts, comments));
+        });
+
+        // --- Dev: seed a post authored by a specific approved figure ---
+        app.MapPost("/api/seed", async (IPostService svc, IReplyGenerator gen, string figure, CancellationToken ct) =>
+        {
+            if (!Figures.IsApproved(figure)) return Results.BadRequest("Unknown figure.");
+            if (gen.Available.Count == 0) return Results.BadRequest("No AI providers configured.");
+            var draft = await gen.GeneratePostAsync(figure, gen.Available[0], ct);
+            var post = await svc.CreateSystemPostAsync(figure, draft.Title, draft.Body, ct);
+            return post is null ? Results.UnprocessableEntity("Blocked by moderation.") : Results.Ok(post);
         });
 
         return app;

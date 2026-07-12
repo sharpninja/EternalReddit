@@ -204,6 +204,7 @@ table.logs tr:first-child td { border-top: none; }
 /* ---- profile + clickable names ---- */
 .profile-head { margin-bottom: 14px; }
 .profile-name { margin: 0; font-size: 1.3rem; }
+.persona { margin: 6px 0 8px; font-size: 0.9rem; line-height: 1.45; font-style: italic; }
 .section { font-size: 0.95rem; margin: 18px 0 8px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.03em; }
 .authorlink { font-weight: 600; }
 .authorlink:hover, a.figure:hover { color: var(--accent); }

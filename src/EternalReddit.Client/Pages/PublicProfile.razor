@@ -18,6 +18,10 @@
     {
         <div class="profile-head">
             <h2 class="profile-name">@_p.Name</h2>
+            @if (!string.IsNullOrWhiteSpace(_p.Persona))
+            {
+                <div class="persona">@_p.Persona</div>
+            }
             <div class="dim">@_p.PostCount posts · @_p.PostKarma post karma · @_p.CommentCount comments · @_p.CommentKarma comment karma</div>
         </div>
 

@@ -53,12 +53,14 @@ public sealed class ReplyGenerator : IReplyGenerator
     public async Task<PostDraft> GeneratePostAsync(string figure, AiProvider provider, CancellationToken ct = default)
     {
         var ai = Resolve(provider);
+        var persona = Figures.Persona(figure);
         var system =
-            $"You are {figure}, writing an original post on r/AllOfHistory, where historical, legendary, and " +
-            "mythical figures post as contemporaries. Write a short post in character - a question, hot take, " +
-            $"or wry observation - grounded in {figure}'s real personality and era. Never build humor on " +
-            "atrocity, genocide, slavery, or violent conquest. Do not fabricate real quotes. Reply with ONLY " +
-            "a JSON object: {\"title\":\"a short title\",\"body\":\"1-3 sentences\"}.";
+            $"You are {figure}." + (persona is null ? "" : $" {persona}") +
+            " You are writing an original post on r/AllOfHistory, where historical, legendary, and mythical " +
+            "figures post as contemporaries. Write a short post fully in character - a question, hot take, or " +
+            "wry observation. Never build humor on, or glorify, atrocity, genocide, slavery, or violent conquest. " +
+            "Do not fabricate real quotes. Reply with ONLY a JSON object: " +
+            "{\"title\":\"a short title\",\"body\":\"1-3 sentences\"}.";
         return ParsePost(await ai.CompleteAsync(system, "Write your post now.", 400, ct));
     }
 
@@ -79,15 +81,19 @@ public sealed class ReplyGenerator : IReplyGenerator
             : throw new InvalidOperationException($"Provider {provider} is not configured.");
 
     private static string ReplySystem(string figure, string? parentFigure)
-        => $"You are {figure}, commenting on r/AllOfHistory, where historical, legendary, and mythical figures " +
-           $"talk as contemporaries. Stay in character, grounded in {figure}'s real personality, era, and " +
-           "rivalries. " +
+    {
+        var persona = Figures.Persona(figure);
+        return $"You are {figure}." + (persona is null ? "" : $" {persona}") +
+           " You are commenting on r/AllOfHistory, where historical, legendary, and mythical figures talk as " +
+           "contemporaries. Stay fully in character and in that voice. " +
            (parentFigure is null
                ? "Write a top-level comment on the post. "
                : $"You are replying directly to {parentFigure}: address them by name and respond to what they " +
                  "actually said, building on the whole conversation above. ") +
-           "Keep it to 1-3 sentences. Never build humor on atrocity, genocide, slavery, or violent conquest. " +
-           "Do not fabricate real quotes. Reply with ONLY your comment text - no name label, no surrounding quotes, no JSON.";
+           "Keep it to 1-3 sentences. Never build humor on, or glorify, atrocity, genocide, slavery, or violent " +
+           "conquest. Do not fabricate real quotes. Reply with ONLY your comment text - no name label, no " +
+           "surrounding quotes, no JSON.";
+    }
 
     private static string BuildBranchPrompt(Post post, IReadOnlyList<Reply> branch, string figure, string? parentFigure)
     {
