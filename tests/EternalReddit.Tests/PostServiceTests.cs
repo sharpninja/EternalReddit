@@ -124,6 +124,25 @@ public class PostServiceTests
     }
 
     [Fact]
+    public void Top_posters_rank_figures_by_total_comment_karma()
+    {
+        var post = new Post { Body = "q" };
+        post.Replies.Add(new Reply { Figure = "Newton", Upvotes = 5, Downvotes = 1 }); // 4
+        post.Replies.Add(new Reply { Figure = "Ada", Upvotes = 10, Downvotes = 2 });   // 8
+        post.Replies.Add(new Reply { Figure = "Newton", Upvotes = 2, Downvotes = 0 }); // Newton total 6
+        _posts.Add(post);
+
+        var top = Build().GetTopPosters(10);
+
+        Assert.Equal(2, top.Count);
+        Assert.Equal("Ada", top[0].Figure);
+        Assert.Equal(8, top[0].Karma);
+        Assert.Equal("Newton", top[1].Figure);
+        Assert.Equal(6, top[1].Karma);
+        Assert.Equal(2, top[1].Comments);
+    }
+
+    [Fact]
     public async Task Share_increments_and_returns_count()
     {
         var svc = Build();

@@ -5,59 +5,66 @@
 
 <PageTitle>r/AllOfHistory</PageTitle>
 
-<div class="composer">
-    <input class="title-input" @bind="_title" placeholder="Title (optional)" />
-    <textarea class="body-input" @bind="_body" placeholder="Ask history anything..."></textarea>
-    <div class="composer-actions">
-        <span class="dim">@_status</span>
-        <button class="btn" @onclick="Submit" disabled="@_posting">@(_posting ? "Posting..." : "Post")</button>
-    </div>
-</div>
-
-@if (_loading)
-{
-    <p class="dim center">Loading feed...</p>
-}
-else if (_feed.Count == 0)
-{
-    <p class="dim center">No posts yet. Be the first.</p>
-}
-else
-{
-    @foreach (var post in _feed)
-    {
-        <div class="post">
-            <div class="pvote">
-                <button class="arrow" @onclick='() => VotePost(post, "up")'>&#9650;</button>
-                <span class="score">@post.Score</span>
-                <button class="arrow" @onclick='() => VotePost(post, "down")'>&#9660;</button>
-            </div>
-            <div class="pmain">
-                <div class="pmeta">Posted by @(string.IsNullOrEmpty(post.AuthorName) ? "u/anon" : post.AuthorName) · @Ago(post.CreatedUtc)</div>
-                @if (!string.IsNullOrWhiteSpace(post.Title))
-                {
-                    <h3 class="ptitle">@post.Title</h3>
-                }
-                <div class="ptext">@post.Body</div>
-                <div class="pactions">
-                    <span>@post.Replies.Count comments</span>
-                    <button class="link" @onclick="() => Share(post)">
-                        Share@(_shareMsg.TryGetValue(post.Id, out var m) ? $" · {m}" : "")
-                    </button>
-                </div>
-                <div class="comments">
-                    @foreach (var top in TopLevel(post))
-                    {
-                        <CommentView Reply="top" All="post.Replies" PostId="post.Id" />
-                    }
-                </div>
+<div class="layout">
+    <div class="feed-col">
+        <div class="composer">
+            <input class="title-input" @bind="_title" placeholder="Title (optional)" />
+            <textarea class="body-input" @bind="_body" placeholder="Ask history anything..."></textarea>
+            <div class="composer-actions">
+                <span class="dim">@_status</span>
+                <button class="btn" @onclick="Submit" disabled="@_posting">@(_posting ? "Posting..." : "Post")</button>
             </div>
         </div>
-    }
-}
+
+        @if (_loading)
+        {
+            <p class="dim center">Loading feed...</p>
+        }
+        else if (_feed.Count == 0)
+        {
+            <p class="dim center">No posts yet. Be the first.</p>
+        }
+        else
+        {
+            @foreach (var post in _feed)
+            {
+                <div class="post">
+                    <div class="pvote">
+                        <button class="arrow" @onclick='() => VotePost(post, "up")'>&#9650;</button>
+                        <span class="score">@post.Score</span>
+                        <button class="arrow" @onclick='() => VotePost(post, "down")'>&#9660;</button>
+                    </div>
+                    <div class="pmain">
+                        <div class="pmeta">Posted by @(string.IsNullOrEmpty(post.AuthorName) ? "u/anon" : post.AuthorName) · @Ago(post.CreatedUtc)</div>
+                        @if (!string.IsNullOrWhiteSpace(post.Title))
+                        {
+                            <h3 class="ptitle">@post.Title</h3>
+                        }
+                        <div class="ptext">@post.Body</div>
+                        <div class="pactions">
+                            <span>@post.Replies.Count comments</span>
+                            <button class="link" @onclick="() => Share(post)">
+                                Share@(_shareMsg.TryGetValue(post.Id, out var m) ? $" · {m}" : "")
+                            </button>
+                        </div>
+                        <div class="comments">
+                            @foreach (var top in TopLevel(post))
+                            {
+                                <CommentView Reply="top" All="post.Replies" PostId="post.Id" OnVoted="RefreshTopPosters" />
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+
+    <TopPosters Posters="_topPosters" />
+</div>
 
 @code {
     private List<Post> _feed = new();
+    private IReadOnlyList<TopPoster> _topPosters = Array.Empty<TopPoster>();
     private bool _loading = true;
     private bool _posting;
     private string? _title;
@@ -92,7 +99,18 @@ else
         _loading = true;
         try { _feed = await Api.GetFeedAsync(); }
         catch { _status = "Couldn't load the feed."; }
+        try { _topPosters = await Api.GetTopPostersAsync(); }
+        catch { /* leaderboard is best-effort */ }
         _loading = false;
+    }
+
+    // Only comment votes change figure karma, so the sidebar is refreshed from
+    // CommentView (not from post votes).
+    private async Task RefreshTopPosters()
+    {
+        try { _topPosters = await Api.GetTopPostersAsync(); }
+        catch { /* leaderboard is best-effort */ }
+        StateHasChanged();
     }
 
     private async Task Submit()

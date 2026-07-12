@@ -1,0 +1,29 @@
+@namespace EternalReddit.Client.Components
+
+<aside class="sidebar">
+    <div class="side-card">
+        <div class="side-title">Top Posters</div>
+        <div class="side-sub dim">history's cast, ranked by comment karma</div>
+        @if (Posters.Count == 0)
+        {
+            <div class="side-empty dim">No comments yet - be the first to post.</div>
+        }
+        else
+        {
+            <ol class="poster-list">
+                @foreach (var entry in Posters.Select((p, i) => (p, i)))
+                {
+                    <li class="poster">
+                        <span class="poster-rank">@(entry.i + 1)</span>
+                        <span class="poster-figure" title="@entry.p.Comments comment@(entry.p.Comments == 1 ? "" : "s")">@entry.p.Figure</span>
+                        <span class="poster-karma @(entry.p.Karma < 0 ? "neg" : "")">@entry.p.Karma</span>
+                    </li>
+                }
+            </ol>
+        }
+    </div>
+</aside>
+
+@code {
+    [Parameter] public IReadOnlyList<TopPoster> Posters { get; set; } = Array.Empty<TopPoster>();
+}

@@ -54,6 +54,10 @@ public static class PostEndpoints
             return Results.Ok(new { shareCount = count, url });
         }).RequireAuthorization();
 
+        // --- Anonymous read: figure leaderboard by comment karma ---
+        app.MapGet("/api/top-posters", (IPostService svc, int? count) =>
+            Results.Ok(svc.GetTopPosters(count is > 0 ? count.Value : 10)));
+
         return app;
     }
 

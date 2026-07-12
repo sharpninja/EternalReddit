@@ -15,6 +15,9 @@ public sealed class EternalRedditApi
     public async Task<MeInfo> GetMeAsync()
         => await _http.GetFromJsonAsync<MeInfo>("api/me") ?? new MeInfo(false, null, Array.Empty<string>());
 
+    public async Task<List<TopPoster>> GetTopPostersAsync(int count = 10)
+        => await _http.GetFromJsonAsync<List<TopPoster>>($"api/top-posters?count={count}") ?? new();
+
     public Task<HttpResponseMessage> CreatePostAsync(string? title, string body)
         => _http.PostAsJsonAsync("api/posts", new CreatePostBody(title, body));
 

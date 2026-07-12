@@ -15,7 +15,7 @@
         <div class="ctext">@Reply.Body</div>
         @foreach (var child in Children)
         {
-            <CommentView Reply="child" All="All" PostId="PostId" />
+            <CommentView Reply="child" All="All" PostId="PostId" OnVoted="OnVoted" />
         }
     </div>
 </div>
@@ -25,6 +25,9 @@
     [Parameter] public IReadOnlyList<Reply> All { get; set; } = Array.Empty<Reply>();
     [Parameter] public Guid PostId { get; set; }
 
+    /// <summary>Raised after a comment vote so the parent can refresh the karma leaderboard.</summary>
+    [Parameter] public EventCallback OnVoted { get; set; }
+
     [Inject] public EternalRedditApi Api { get; set; } = default!;
 
     private IEnumerable<Reply> Children => All.Where(r => r.ParentReplyId == Reply.Id);
@@ -32,7 +35,12 @@
     private async Task Vote(string dir)
     {
         var r = await Api.VoteReplyAsync(PostId, Reply.Id, dir);
-        if (r is not null) { Reply.Upvotes = r.Upvotes; Reply.Downvotes = r.Downvotes; }
+        if (r is not null)
+        {
+            Reply.Upvotes = r.Upvotes;
+            Reply.Downvotes = r.Downvotes;
+            await OnVoted.InvokeAsync();
+        }
     }
 
     private static string Ago(DateTime utc)

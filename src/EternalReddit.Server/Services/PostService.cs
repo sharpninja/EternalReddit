@@ -26,6 +26,7 @@ public interface IPostService
     int Share(Guid postId, Guid? replyId);
     IReadOnlyList<Post> GetRecent(int count = 50);
     Post? Get(Guid id);
+    IReadOnlyList<TopPoster> GetTopPosters(int count = 10);
 }
 
 public sealed class PostService : IPostService
@@ -60,6 +61,17 @@ public sealed class PostService : IPostService
 
     public IReadOnlyList<Post> GetRecent(int count = 50) => _posts.GetRecent(count);
     public Post? Get(Guid id) => _posts.Get(id);
+
+    public IReadOnlyList<TopPoster> GetTopPosters(int count = 10)
+        => _posts.GetRecent(int.MaxValue)
+            .SelectMany(p => p.Replies)
+            .Where(r => !string.IsNullOrWhiteSpace(r.Figure))
+            .GroupBy(r => r.Figure)
+            .Select(g => new TopPoster(g.Key, g.Sum(r => r.Score), g.Count()))
+            .OrderByDescending(t => t.Karma)
+            .ThenByDescending(t => t.Comments)
+            .Take(count)
+            .ToList();
 
     public async Task<CreatePostResult> CreateAsync(CreatePostRequest request, CancellationToken ct = default)
     {
