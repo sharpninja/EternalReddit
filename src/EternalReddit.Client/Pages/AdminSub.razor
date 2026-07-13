@@ -36,22 +36,30 @@
                 }
             </div>
 
-            <div class="side-sub dim">Model per agent in this sub (pick or type; blank = provider default)</div>
+            <div class="side-sub dim">Model per agent in this sub</div>
             @foreach (var p in _providers)
             {
+                var sel = SelectValueFor(p);
                 <div class="admin-model-row">
                     <span class="admin-name">@p</span>
-                    <input class="title-input" list="@($"models-{p}")"
-                           placeholder="@(DefaultFor(p) is { Length: > 0 } d ? $"default: {d}" : "model id")"
-                           value="@(_sub.ResolveModel(p) ?? "")"
-                           @onchange="e => SetModel(p, e.Value?.ToString())" />
-                    <datalist id="@($"models-{p}")">
+                    <select class="sub-select model-select" value="@sel" @onchange="e => OnModelPick(p, e.Value?.ToString())">
+                        <option value="">@(DefaultFor(p) is { Length: > 0 } d ? $"Provider default ({d})" : "Provider default")</option>
                         @foreach (var m in ModelsFor(p))
                         {
-                            <option value="@m" />
+                            <option value="@m">@m</option>
                         }
-                    </datalist>
+                        <option value="__custom__">Custom…</option>
+                    </select>
                 </div>
+                @if (sel == "__custom__")
+                {
+                    <div class="admin-model-row">
+                        <span class="admin-name"></span>
+                        <input class="title-input" placeholder="custom model id"
+                               value="@(_sub.ResolveModel(p) ?? "")"
+                               @onchange="e => SetModel(p, e.Value?.ToString())" />
+                    </div>
+                }
             }
 
             <div class="composer-actions">
@@ -109,11 +117,29 @@
         if (!on) _sub.GroupIds.Remove(slug);
     }
 
+    private readonly HashSet<AiProvider> _customOpen = new();
+
     private IReadOnlyList<string> ModelsFor(AiProvider p)
         => _models.FirstOrDefault(m => m.Provider == p)?.Models ?? (IReadOnlyList<string>)Array.Empty<string>();
 
     private string? DefaultFor(AiProvider p)
         => _models.FirstOrDefault(m => m.Provider == p)?.DefaultModel;
+
+    // The select shows the current override, "" for provider default, or Custom…
+    // when the override isn't in the provider's catalog (or the admin chose Custom).
+    private string SelectValueFor(AiProvider p)
+    {
+        var current = _sub.ResolveModel(p);
+        if (current is null) return _customOpen.Contains(p) ? "__custom__" : "";
+        return ModelsFor(p).Contains(current) && !_customOpen.Contains(p) ? current : "__custom__";
+    }
+
+    private void OnModelPick(AiProvider p, string? value)
+    {
+        if (value == "__custom__") { _customOpen.Add(p); return; } // reveal the free-text field
+        _customOpen.Remove(p);
+        SetModel(p, string.IsNullOrEmpty(value) ? null : value);
+    }
 
     private void SetModel(AiProvider p, string? modelId)
     {

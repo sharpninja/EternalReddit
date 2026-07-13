@@ -337,8 +337,9 @@ table.logs tr:first-child td { border-top: none; }
 .admin-checks { display: flex; gap: 12px; flex-wrap: wrap; margin: 6px 0 10px; }
 .admin-check { font-size: 0.85rem; display: inline-flex; align-items: center; gap: 5px; }
 .admin-model-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
-.admin-model-row .admin-name { width: 110px; }
+.admin-model-row .admin-name { width: 110px; flex-shrink: 0; }
 .admin-model-row .title-input { margin-bottom: 0; }
+.admin-model-row .model-select { flex: 1; min-width: 0; }
 .admin-stats { display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.85rem; }
 .link.danger:hover { color: #e5484d; }
 a.btn { display: inline-block; text-decoration: none; text-align: center; }
