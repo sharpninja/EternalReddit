@@ -28,14 +28,15 @@ function TeardownContainer($name) {
 
 function Resolve-Source($repoUrl, $workLeaf) {
     # Git-sourced steps materialize the repo in the working directory; otherwise clone.
+    # git output is routed to the host stream so it can never pollute the return value.
     if (Test-Path (Join-Path $PWD 'Dockerfile')) { return "$PWD" }
     $work = Join-Path $env:ProgramData $workLeaf
     New-Item -ItemType Directory -Force (Split-Path $work) | Out-Null
     if (Test-Path (Join-Path $work '.git')) {
-        git -C $work fetch --all --prune
-        git -C $work reset --hard origin/main
+        git -C $work fetch --all --prune 2>&1 | Write-Host
+        git -C $work reset --hard origin/main 2>&1 | Write-Host
     } else {
-        git clone --branch main --depth 1 $repoUrl $work
+        git clone --branch main --depth 1 $repoUrl $work 2>&1 | Write-Host
     }
     return $work
 }
@@ -44,9 +45,9 @@ $gatewayKey = $OctopusParameters['GATEWAY_KEY']
 if (-not $gatewayKey) { throw 'GATEWAY_KEY variable is not set (EternalSocial library set).' }
 
 $src = Resolve-Source 'https://github.com/sharpninja/EternalReddit.git' 'EternalReddit\src'
-docker build -t $image $src
+docker build -t $image "$src"
 if ($LASTEXITCODE -ne 0) { throw "docker build (app) failed with exit code $LASTEXITCODE" }
-docker build -t $proxyImage -f (Join-Path $src 'src\EternalSocial.Proxy\Dockerfile') $src
+docker build -t $proxyImage -f (Join-Path $src 'src\EternalSocial.Proxy\Dockerfile') "$src"
 if ($LASTEXITCODE -ne 0) { throw "docker build (gateway) failed with exit code $LASTEXITCODE" }
 
 if (-not (docker network ls -q --filter "name=^$network$")) {
