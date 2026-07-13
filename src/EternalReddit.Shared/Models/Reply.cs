@@ -25,5 +25,9 @@ public sealed class Reply
     /// <summary>True when produced by the background auto-reply service.</summary>
     public bool IsBackground { get; set; }
 
+    /// <summary>Set for human-authored comments (Provider == User): the OIDC subject and display name.</summary>
+    public string? AuthorUserId { get; set; }
+    public string? AuthorName { get; set; }
+
     public int Score => Upvotes - Downvotes;
 }

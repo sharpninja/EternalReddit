@@ -19,6 +19,20 @@ public sealed record CreatePostResult(CreatePostStatus Status, Post? Post, strin
     public static CreatePostResult Banned(string reason) => new(CreatePostStatus.Banned, null, reason);
 }
 
+public sealed record AddReplyRequest(Guid PostId, Guid? ParentReplyId, string Body, string AuthorUserId, string AuthorName, string Ip);
+
+public enum AddReplyStatus { Added, RateLimited, Blocked, Banned, PostNotFound, ParentNotFound }
+
+public sealed record AddReplyResult(AddReplyStatus Status, Reply? Reply, string? Reason = null, TimeSpan RetryAfter = default)
+{
+    public static AddReplyResult Added(Reply reply) => new(AddReplyStatus.Added, reply);
+    public static AddReplyResult RateLimited(TimeSpan retryAfter) => new(AddReplyStatus.RateLimited, null, "Rate limit exceeded", retryAfter);
+    public static AddReplyResult Blocked(string reason) => new(AddReplyStatus.Blocked, null, reason);
+    public static AddReplyResult Banned(string reason) => new(AddReplyStatus.Banned, null, reason);
+    public static AddReplyResult PostNotFound() => new(AddReplyStatus.PostNotFound, null, "Post not found");
+    public static AddReplyResult ParentNotFound() => new(AddReplyStatus.ParentNotFound, null, "Parent comment not found");
+}
+
 /// <summary>Application service for the feed: create (moderated + rate-limited), vote, share.</summary>
 public interface IPostService
 {
@@ -26,6 +40,9 @@ public interface IPostService
 
     /// <summary>Create an original post authored by a character into a community (no rate limit); returns null if moderation blocks it.</summary>
     Task<Post?> CreateSystemPostAsync(string communitySlug, string authorName, string? title, string body, CancellationToken ct = default);
+
+    /// <summary>Add a logged-in user's comment (top-level or nested) to a post.</summary>
+    Task<AddReplyResult> AddUserReplyAsync(AddReplyRequest request, CancellationToken ct = default);
 
     /// <summary>Generate and thread one approved-figure reply into a post; returns it, or null if blocked/failed.</summary>
     Task<Reply?> GenerateReplyInto(Post post, AiProvider provider, CancellationToken ct = default);
@@ -94,7 +111,7 @@ public sealed class PostService : IPostService
         foreach (var post in _posts.GetRecent(int.MaxValue))
         {
             var before = post.Replies.Count;
-            post.Replies.RemoveAll(r => r.Provider != AiProvider.Scripted && !_roster.IsApproved(r.Figure));
+            post.Replies.RemoveAll(r => r.Provider != AiProvider.Scripted && r.Provider != AiProvider.User && !_roster.IsApproved(r.Figure));
             if (post.Replies.Count == before) continue;
 
             // Re-root any comment whose parent was just removed, so it stays visible.
@@ -205,6 +222,48 @@ public sealed class PostService : IPostService
         _posts.Update(post);
         await _notifier.FeedChangedAsync();
         return post;
+    }
+
+    public async Task<AddReplyResult> AddUserReplyAsync(AddReplyRequest request, CancellationToken ct = default)
+    {
+        // Same guard rails as a post: banned users out, rate limit, then moderate.
+        if (_users.Get(request.AuthorUserId) is { IsBanned: true })
+            return AddReplyResult.Banned("User is banned");
+
+        var rl = _rateLimiter.Check(request.Ip);
+        if (!rl.Allowed) return AddReplyResult.RateLimited(rl.RetryAfter);
+
+        var outcome = await _moderator.ReviewAsync(request.Body, ct);
+        LogDecision(TargetKind.Reply, request.Body, outcome, request.AuthorUserId, request.Ip);
+        switch (outcome.Action)
+        {
+            case ModerationAction.Ban:
+                Ban(request.AuthorUserId, request.AuthorName, request.Ip, outcome.Verdict);
+                return AddReplyResult.Banned("Prompt injection detected");
+            case ModerationAction.Block:
+                return AddReplyResult.Blocked(outcome.Verdict.ToString());
+        }
+
+        var post = _posts.Get(request.PostId);
+        if (post is null) return AddReplyResult.PostNotFound();
+        if (request.ParentReplyId is { } pid && post.Replies.All(r => r.Id != pid))
+            return AddReplyResult.ParentNotFound();
+
+        var reply = new Reply
+        {
+            Figure = "",                        // humans keep an empty figure (out of the leaderboard)
+            Provider = AiProvider.User,
+            AuthorUserId = request.AuthorUserId,
+            AuthorName = request.AuthorName,
+            Body = request.Body,
+            ParentReplyId = request.ParentReplyId,
+            CreatedUtc = DateTime.UtcNow
+        };
+        post.Replies.Add(reply);
+        _posts.Update(post);
+        _logger.LogInformation("{User} commented on a post", request.AuthorName);
+        await _notifier.FeedChangedAsync();
+        return AddReplyResult.Added(reply);
     }
 
     public VoteResult? Vote(Guid postId, Guid? replyId, string userId, VoteKind kind)

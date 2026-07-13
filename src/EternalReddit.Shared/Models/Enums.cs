@@ -8,7 +8,9 @@ public enum AiProvider
     OpenAI,
     Grok,
     /// <summary>Not an AI provider: a scripted/system comment (e.g. the Columbus gag).</summary>
-    Scripted
+    Scripted,
+    /// <summary>Not an AI provider: a comment written by a logged-in human user.</summary>
+    User
 }
 
 /// <summary>Direction of a vote; the value is the karma delta.</summary>

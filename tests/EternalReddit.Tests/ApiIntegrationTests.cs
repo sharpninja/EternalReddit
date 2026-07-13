@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
 
@@ -30,5 +31,13 @@ public class ApiIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
         var res = await _factory.CreateClient().GetAsync("/api/posts");
         res.EnsureSuccessStatusCode();
         Assert.Equal("[]", await res.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Posting_a_reply_requires_auth()
+    {
+        var res = await _factory.CreateClient()
+            .PostAsJsonAsync($"/api/posts/{Guid.NewGuid()}/replies", new { ParentReplyId = (Guid?)null, Body = "hi" });
+        Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
     }
 }

@@ -9,6 +9,7 @@ namespace EternalReddit.Server.Endpoints;
 public static class PostEndpoints
 {
     public sealed record CreatePostBody(string? Title, string Body);
+    public sealed record AddReplyBody(Guid? ParentReplyId, string Body);
 
     public static IEndpointRouteBuilder MapPostEndpoints(this IEndpointRouteBuilder app)
     {
@@ -50,6 +51,23 @@ public static class PostEndpoints
         group.MapPost("/{id:guid}/replies/{replyId:guid}/vote", (IPostService svc, HttpContext http, Guid id, Guid replyId, string dir) =>
             Vote(svc, http, id, replyId, dir)).RequireAuthorization();
 
+        // A logged-in user posts a comment (top-level when ParentReplyId is null, else nested).
+        group.MapPost("/{id:guid}/replies", async (IPostService svc, HttpContext http, Guid id, AddReplyBody body, CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(body.Body)) return Results.BadRequest("Body is required.");
+            var request = new AddReplyRequest(id, body.ParentReplyId, body.Body,
+                AuthorId(http), DisplayName(http), http.Connection.RemoteIpAddress?.ToString() ?? "unknown");
+            var result = await svc.AddUserReplyAsync(request, ct);
+            return result.Status switch
+            {
+                AddReplyStatus.Added => Results.Created($"/p/{id}#{result.Reply!.Id}", result.Reply),
+                AddReplyStatus.RateLimited => Results.StatusCode(StatusCodes.Status429TooManyRequests),
+                AddReplyStatus.Banned => Results.StatusCode(StatusCodes.Status403Forbidden),
+                AddReplyStatus.PostNotFound or AddReplyStatus.ParentNotFound => Results.NotFound(),
+                _ => Results.UnprocessableEntity(result.Reason)
+            };
+        }).RequireAuthorization();
+
         group.MapPost("/{id:guid}/share", (IPostService svc, Guid id, Guid? replyId) =>
         {
             var count = svc.Share(id, replyId);
@@ -78,7 +96,7 @@ public static class PostEndpoints
             var posts = all.Where(p => p.AuthorName == name).ToList();
             var comments = all
                 .SelectMany(p => p.Replies
-                    .Where(r => r.Figure == name)
+                    .Where(r => r.Figure == name || r.AuthorName == name)
                     .Select(r => new ProfileComment(p.Id, string.IsNullOrWhiteSpace(p.Title) ? "(untitled)" : p.Title, r.Body, r.Score, r.CreatedUtc)))
                 .OrderByDescending(c => c.CreatedUtc).Take(50).ToList();
             return Results.Ok(new UserProfile(name, roster.Persona(name), posts.Count, comments.Count,
