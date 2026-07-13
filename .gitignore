@@ -75,3 +75,4 @@ AGENTS-README-FIRST.yaml
 .mcpServer/
 cache/
 mcp.db
+AGENTS-README-FIRST.yaml.*
