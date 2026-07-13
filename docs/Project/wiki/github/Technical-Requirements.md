@@ -17,7 +17,7 @@ Scope: layer-1+
 ## TR-GATEWAY-ARCH-001
 
 **YARP in-memory routing** — Gateway loads YARP config from memory (InMemoryConfigProvider.Update on route changes). Routes map prefix to '{prefix}/{**catch-all}' at Order 10 with trailing-slash cluster addresses; prefixes pass through un-stripped and downstream apps absorb them with UsePathBase plus a rewritten base href.
-**Covered by:** FR: FR-GATEWAY-001, FR-GATEWAY-003; TEST: TEST-GATEWAY-001
+**Covered by:** FR: FR-GATEWAY-001, FR-GATEWAY-003; TEST: TEST-DEPLOY-001, TEST-GATEWAY-001
 **Status:** completed
 Scope: layer-1+
 
@@ -31,21 +31,35 @@ Scope: layer-1+
 ## TR-GATEWAY-SEC-002
 
 **Forwarded headers and challenge scheme** — ForwardedHeaders options must .Clear() KnownIPNetworks/KnownProxies (collection initializers do not clear defaults - caused http redirect_uri). Gateway rewrites scheme before proxying so downstream ForwardLimit=1 works. DefaultChallengeScheme stays Cookies so APIs return 401 instead of redirecting to Google.
-**Covered by:** FR: FR-GATEWAY-002; TEST: TEST-GATEWAY-001, TEST-READIT-001
+**Covered by:** FR: FR-GATEWAY-002, FR-GATEWAY-004; TEST: TEST-GATEWAY-001, TEST-READIT-001
+**Status:** completed
+Scope: layer-1+
+
+## TR-GATEWAY-SEC-003
+
+**Site container isolation** — Site containers (eternalreddit, eternalx, eternaldiscord) expose no public ports on the docker host. Only the gateway is reachable (host 8090 behind the ngrok tunnel), so all site traffic and identity headers flow through the gateway trust boundary.
+**Covered by:** FR: FR-GATEWAY-001; TEST: TEST-DEPLOY-001, TEST-GATEWAY-001
+**Status:** completed
+Scope: layer-1+
+
+## TR-READIT-AI-001
+
+**AI selection and generation context** — The server assigns the speaker - models never pick their own figure; they receive a fixed persona input. Thread selection gives the AI all posts and replies from the previous 24 hours sorted by activity over the last hour, and the AI chooses from that list. Reply context is reproducible - the post plus the ancestor chain of the comment being answered. Every AI comment records the exact provider and model that produced it.
+**Covered by:** FR: FR-READIT-011, FR-READIT-015; TEST: TEST-READIT-001
 **Status:** completed
 Scope: layer-1+
 
 ## TR-READIT-CONC-001
 
 **Post write serialization** — PostService serializes whole-document writes behind a SemaphoreSlim; replies commit via re-fetch/append/save (CommitReplyAsync) with AI generation outside the lock, eliminating lost-update races that previously dropped Columbus and reply threads.
-**Covered by:** FR: FR-READIT-003, FR-READIT-009; TEST: TEST-READIT-001
+**Covered by:** FR: FR-READIT-003, FR-READIT-009, FR-READIT-011; TEST: TEST-READIT-001
 **Status:** completed
 Scope: layer-1+
 
 ## TR-READIT-DATA-001
 
 **LiteDB persistence conventions** — Single-file LiteDB store with BsonMapper EmptyStringToNull=false, DateTime as UTC ticks, fluent string-id mapping for Community/PeerGroup/Figure (Shared models stay attribute-free), and an index on Post.Community. Seeding is per-id insert-if-absent so releases add defaults without clobbering admin edits.
-**Covered by:** FR: FR-READIT-001, FR-READIT-002, FR-READIT-005, FR-READIT-006, FR-READIT-007, FR-READIT-008, FR-READIT-010; TEST: TEST-READIT-001
+**Covered by:** FR: FR-READIT-001, FR-READIT-002, FR-READIT-005, FR-READIT-006, FR-READIT-007, FR-READIT-008, FR-READIT-010, FR-READIT-012, FR-READIT-013, FR-READIT-014, FR-READIT-015, FR-READIT-016; TEST: TEST-READIT-001
 **Status:** completed
 Scope: layer-1+
 
