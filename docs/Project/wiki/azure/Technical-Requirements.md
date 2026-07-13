@@ -14,10 +14,10 @@ Scope: layer-1+
 **Status:** completed
 Scope: layer-1+
 
-## TR-CORE-ARCH-001
+## TR-CORE-AUTH-001
 
-**YARP in-memory routing** — Gateway loads YARP config from memory (InMemoryConfigProvider.Update on route changes). Routes map prefix to '{prefix}/{**catch-all}' at Order 10 with trailing-slash cluster addresses; prefixes pass through un-stripped and downstream apps absorb them with UsePathBase plus a rewritten base href.
-**Covered by:** FR: FR-CORE-009, FR-CORE-011; TEST: TEST-CORE-002, TEST-CORE-003
+**Site-side gateway authentication contract** — GatewayAuthHandler (scheme Gateway) builds the request principal from X-Auth-UserId/Name/Email only when the X-Gateway-Key header matches the site's GATEWAY_KEY config; otherwise the request stays anonymous. Login/logout links point at the gateway root (root-absolute, outside PATH_BASE); the site absorbs its prefix with UsePathBase and a rewritten base href. The site never runs its own OAuth in gateway mode.
+**Covered by:** FR: FR-CORE-004, FR-CORE-019; TEST: TEST-CORE-001
 **Status:** completed
 Scope: layer-1+
 
@@ -54,27 +54,6 @@ Scope: layer-1+
 **Git trigger and lifecycle wiring** — Per-project Git triggers need Filter.Sources populated with the DeploymentActionSlug (empty Sources watch nothing) and Action.ChannelId set; git-sourced steps must not carry a Script.Syntax property. Lifecycle Development phase lists Environments-3 as automatic target. Known gap - trigger-created releases are not auto-deploying and currently need a manual deployment.
 **Covered by:** FR: FR-CORE-013, FR-CORE-014; TEST: TEST-CORE-003
 **Status:** in_progress
-Scope: layer-1+
-
-## TR-CORE-SEC-001
-
-**Identity header trust boundary** — The gateway strips inbound X-Auth-* and X-Gateway-Key from clients, then injects X-Gateway-Key plus X-Auth-UserId/Name/Email from the authenticated principal. Sites accept the headers only when their GATEWAY_KEY config matches; otherwise the request is anonymous. Trust boundary = docker network + shared key.
-**Covered by:** FR: FR-CORE-004, FR-CORE-010; TEST: TEST-CORE-001, TEST-CORE-002
-**Status:** completed
-Scope: layer-1+
-
-## TR-CORE-SEC-002
-
-**Forwarded headers and challenge scheme** — ForwardedHeaders options must .Clear() KnownIPNetworks/KnownProxies (collection initializers do not clear defaults - caused http redirect_uri). Gateway rewrites scheme before proxying so downstream ForwardLimit=1 works. DefaultChallengeScheme stays Cookies so APIs return 401 instead of redirecting to Google.
-**Covered by:** FR: FR-CORE-010, FR-CORE-012; TEST: TEST-CORE-001, TEST-CORE-002
-**Status:** completed
-Scope: layer-1+
-
-## TR-CORE-SEC-003
-
-**Site container isolation** — Site containers (eternalreddit, eternalx, eternaldiscord) expose no public ports on the docker host. Only the gateway is reachable (host 8090 behind the ngrok tunnel), so all site traffic and identity headers flow through the gateway trust boundary.
-**Covered by:** FR: FR-CORE-009; TEST: TEST-CORE-002, TEST-CORE-003
-**Status:** completed
 Scope: layer-1+
 
 ## TR-CORE-VOL-001

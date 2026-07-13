@@ -85,26 +85,6 @@ Scope: layer-1+
 Users get exactly one vote per post or comment (deduplicated per user). Figure karma is tracked from votes and a Top Posters sidebar ranks figures by karma.
 Scope: layer-1+
 
-## FR-CORE-009 EternalSocial gateway estate
-
-A standalone YARP gateway fronts EternalReadit (/r), EternalX (/x), and EternalDiscord (/d) on one docker network with a landing page listing the networks, request logs, and an owner-only admin console.
-Scope: layer-1+
-
-## FR-CORE-010 Single sign-on shared to all sites
-
-The gateway owns the single Google OIDC sign-in at the public root and forwards identity to every proxied site via X-Auth-UserId/Name/Email plus X-Gateway-Key; sites build their principal from those headers only when GATEWAY_KEY matches and never run their own OAuth in gateway mode.
-Scope: layer-1+
-
-## FR-CORE-011 Admin-configurable proxy routes
-
-Proxy prefixes are data-driven (LiteDB) with CRUD from the admin console, prefix validation against reserved paths, enable/disable, and a coming-soon page for enabled routes with no upstream. Seeding fills empty upstreams with defaults but never overwrites admin edits.
-Scope: layer-1+
-
-## FR-CORE-012 Persistent sign-in
-
-Logged-in users stay logged in across visits and restarts - the gateway issues a long-lived (365 day) authentication cookie so sessions survive between uses.
-Scope: layer-1+
-
 ## FR-CORE-013 Per-repo deploy triggers
 
 Each of the three repos deploys independently - an Octopus Git trigger per project polls its GitHub repo and creates a release on push to main; no shared pipeline and no GitHub Actions.
@@ -133,6 +113,11 @@ Scope: layer-1+
 ## FR-CORE-018 Versioned export and restore
 
 Admin export downloads a versioned JSON snapshot (posts, communities, peer groups, figures, users, settings). Restore rejects unsupported versions and malformed bundles, replaces state from the snapshot, and notifies the live feed. Clear-feed removes posts only, preserving roster and config.
+Scope: layer-1+
+
+## FR-CORE-019 Authenticates via gateway SSO
+
+The site consumes identity forwarded by the EternalSocial gateway (X-Auth-* headers gated on GATEWAY_KEY) instead of running its own OAuth. /api/me reports gateway mode with the Google provider, and admin checks ride the forwarded email claim.
 Scope: layer-1+
 
 ## FR-UI-001 Client UX bundle
