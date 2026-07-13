@@ -29,11 +29,12 @@
         {
             <div class="side-card admin-section">
                 <div class="side-title">Communities</div>
+                <div class="side-sub dim">Click a sub to edit it - groups, and the model each agent uses there.</div>
                 @foreach (var c in _subs)
                 {
                     <div class="admin-row">
-                        <span class="admin-name">r/@c.Slug</span>
-                        <span class="dim">@c.Name · @(c.GroupIds.Count == 0 ? "open to all" : string.Join(", ", c.GroupIds))@(c.Enabled ? "" : " · disabled")</span>
+                        <button class="admin-name linklike" @onclick="() => EditSub(c)">r/@c.Slug</button>
+                        <span class="dim">@c.Name · @(c.GroupIds.Count == 0 ? "open to all" : string.Join(", ", c.GroupIds))@(c.Enabled ? "" : " · disabled")@(c.Models.Count > 0 ? $" · {c.Models.Count} model override(s)" : "")</span>
                         <button class="link" @onclick="() => EditSub(c)">Edit</button>
                         @if (c.Slug != "allofhistory")
                         {
@@ -109,7 +110,7 @@
                 @foreach (var f in _figures.OrderBy(f => f.Name))
                 {
                     <div class="admin-row">
-                        <span class="admin-name">@f.Name</span>
+                        <button class="admin-name linklike" @onclick="() => EditFigure(f)">@f.Name</button>
                         <span class="dim">@(string.Join(", ", f.GroupIds))@(f.Enabled ? "" : " · benched")</span>
                         <button class="link" @onclick="() => EditFigure(f)">Edit</button>
                         <button class="link danger" @onclick="() => DeleteFigure(f.Name)">Delete</button>
