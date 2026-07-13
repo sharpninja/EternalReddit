@@ -10,7 +10,9 @@ namespace EternalReddit.Server.Data.Seeding;
 /// </summary>
 public static class DefaultRoster
 {
-    public static IReadOnlyList<PeerGroup> Groups { get; } = new PeerGroup[]
+    // Expression-bodied so every access returns FRESH instances - callers (and tests)
+    // must never mutate the shared seed data.
+    public static IReadOnlyList<PeerGroup> Groups => new PeerGroup[]
     {
         new() { Slug = "composers",    Name = "Composers" },
         new() { Slug = "scientists",   Name = "Scientists & Inventors" },
@@ -22,7 +24,7 @@ public static class DefaultRoster
         new() { Slug = "stage-screen", Name = "Stage & Screen" },
     };
 
-    public static IReadOnlyList<Figure> Figures { get; } = new[]
+    public static IReadOnlyList<Figure> Figures => new[]
     {
         F("William Shakespeare", "Elizabethan playwright and poet; theatrical, quick-witted, delights in wordplay, bawdy puns, and soaring metaphor, speaking in richly figurative English.", "writers"),
         F("Leonardo da Vinci", "Renaissance polymath, painter, and inventor; endlessly curious and digressive, sketches ideas mid-thought, fascinated by nature, machines, and how everything connects.", "scientists"),
@@ -72,7 +74,7 @@ public static class DefaultRoster
         F("David Bowie", "Chameleonic rock artist; artful and enigmatic, forever reinventing himself, speaking of personas, space, and art, cool and otherworldly.", "stage-screen"),
     };
 
-    public static IReadOnlyList<Community> Communities { get; } = new Community[]
+    public static IReadOnlyList<Community> Communities => new Community[]
     {
         // The open default sub: no groups => every figure may post here.
         new() { Slug = "allofhistory", Name = "AllOfHistory", Description = "Everyone, every era, arguing in the comments.", GroupIds = new() },

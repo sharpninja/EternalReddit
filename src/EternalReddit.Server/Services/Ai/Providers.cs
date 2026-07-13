@@ -22,7 +22,7 @@ public sealed class ClaudeProvider : IAiProvider
     public AiProvider Kind => AiProvider.Claude;
     public bool IsConfigured => !string.IsNullOrWhiteSpace(_key);
 
-    public async Task<string> CompleteAsync(string system, string user, int maxTokens, CancellationToken ct = default)
+    public async Task<string> CompleteAsync(string system, string user, int maxTokens, string? model = null, CancellationToken ct = default)
     {
         var http = _factory.CreateClient();
         using var req = new HttpRequestMessage(HttpMethod.Post, "https://api.anthropic.com/v1/messages");
@@ -30,7 +30,7 @@ public sealed class ClaudeProvider : IAiProvider
         req.Headers.Add("anthropic-version", "2023-06-01");
         req.Content = JsonContent.Create(new
         {
-            model = _model,
+            model = model ?? _model,
             max_tokens = maxTokens,
             system,
             messages = new[] { new { role = "user", content = user } }
@@ -65,14 +65,14 @@ public abstract class OpenAiCompatibleProvider : IAiProvider
     public abstract AiProvider Kind { get; }
     public bool IsConfigured => !string.IsNullOrWhiteSpace(_key);
 
-    public async Task<string> CompleteAsync(string system, string user, int maxTokens, CancellationToken ct = default)
+    public async Task<string> CompleteAsync(string system, string user, int maxTokens, string? model = null, CancellationToken ct = default)
     {
         var http = _factory.CreateClient();
         using var req = new HttpRequestMessage(HttpMethod.Post, _endpoint);
         req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _key);
         req.Content = JsonContent.Create(new
         {
-            model = _model,
+            model = model ?? _model,
             max_tokens = maxTokens,
             messages = new[]
             {
@@ -123,10 +123,10 @@ public sealed class HuggingFaceProvider : IAiProvider
     public AiProvider Kind => AiProvider.HuggingFace;
     public bool IsConfigured => !string.IsNullOrWhiteSpace(_key);
 
-    public async Task<string> CompleteAsync(string system, string user, int maxTokens, CancellationToken ct = default)
+    public async Task<string> CompleteAsync(string system, string user, int maxTokens, string? model = null, CancellationToken ct = default)
     {
         var http = _factory.CreateClient();
-        using var req = new HttpRequestMessage(HttpMethod.Post, $"https://api-inference.huggingface.co/models/{_model}");
+        using var req = new HttpRequestMessage(HttpMethod.Post, $"https://api-inference.huggingface.co/models/{model ?? _model}");
         req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _key);
         req.Content = JsonContent.Create(new
         {

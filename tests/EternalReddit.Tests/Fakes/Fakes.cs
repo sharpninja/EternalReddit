@@ -19,10 +19,14 @@ public sealed class FakeAiProvider : IAiProvider
     public AiProvider Kind { get; }
     public bool IsConfigured { get; }
     public string? LastUser { get; private set; }
+    public string? LastSystem { get; private set; }
+    public string? LastModel { get; private set; }
 
-    public Task<string> CompleteAsync(string system, string user, int maxTokens, CancellationToken ct = default)
+    public Task<string> CompleteAsync(string system, string user, int maxTokens, string? model = null, CancellationToken ct = default)
     {
+        LastSystem = system;
         LastUser = user;
+        LastModel = model;
         return Task.FromResult(_response);
     }
 }

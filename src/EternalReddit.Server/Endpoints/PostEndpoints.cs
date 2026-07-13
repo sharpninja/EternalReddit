@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using EternalReddit.Server.Data;
 using EternalReddit.Server.Services;
 using EternalReddit.Server.Services.Ai;
 using EternalReddit.Shared.Models;
@@ -71,7 +72,7 @@ public static class PostEndpoints
             .RequireAuthorization();
 
         // --- Anonymous read: public profile for any name (user or figure) ---
-        app.MapGet("/api/users/{name}", (IPostService svc, string name) =>
+        app.MapGet("/api/users/{name}", (IPostService svc, IRosterService roster, string name) =>
         {
             var all = svc.GetRecent(500);
             var posts = all.Where(p => p.AuthorName == name).ToList();
@@ -80,17 +81,21 @@ public static class PostEndpoints
                     .Where(r => r.Figure == name)
                     .Select(r => new ProfileComment(p.Id, string.IsNullOrWhiteSpace(p.Title) ? "(untitled)" : p.Title, r.Body, r.Score, r.CreatedUtc)))
                 .OrderByDescending(c => c.CreatedUtc).Take(50).ToList();
-            return Results.Ok(new UserProfile(name, Figures.Persona(name), posts.Count, comments.Count,
+            return Results.Ok(new UserProfile(name, roster.Persona(name), posts.Count, comments.Count,
                 posts.Sum(p => p.Score), comments.Sum(c => c.Score), posts, comments));
         });
 
         // --- Dev: seed a post authored by a specific approved figure ---
-        app.MapPost("/api/seed", async (IPostService svc, IReplyGenerator gen, string figure, CancellationToken ct) =>
+        app.MapPost("/api/seed", async (IPostService svc, IReplyGenerator gen, IRosterService roster, ICommunityStore communities, string figure, string? sub, CancellationToken ct) =>
         {
-            if (!Figures.IsApproved(figure)) return Results.BadRequest("Unknown figure.");
+            if (!roster.IsApproved(figure)) return Results.BadRequest("Unknown figure.");
             if (gen.Available.Count == 0) return Results.BadRequest("No AI providers configured.");
-            var draft = await gen.GeneratePostAsync(figure, gen.Available[0], ct);
-            var post = await svc.CreateSystemPostAsync(figure, draft.Title, draft.Body, ct);
+            var community = communities.Get(string.IsNullOrWhiteSpace(sub) ? "allofhistory" : sub) ?? communities.Get("allofhistory");
+            var slug = community?.Slug ?? "allofhistory";
+            var provider = gen.Available[0];
+            var ctx = community is null ? AiContext.Default : new AiContext(community.Name, community.Description, community.ResolveModel(provider));
+            var draft = await gen.GeneratePostAsync(figure, roster.Persona(figure), provider, ctx, ct);
+            var post = await svc.CreateSystemPostAsync(slug, figure, draft.Title, draft.Body, ct);
             return post is null ? Results.UnprocessableEntity("Blocked by moderation.") : Results.Ok(post);
         });
 

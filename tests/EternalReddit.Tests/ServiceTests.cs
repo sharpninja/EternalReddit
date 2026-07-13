@@ -94,7 +94,7 @@ public class ReplyGeneratorTests
             new FakeAiProvider(AiProvider.Claude, "{\"figure\":\"whatever\",\"body\":\"Calculus was mine first.\"}")
         });
 
-        var body = await gen.GenerateReplyBodyAsync(SamplePost(), Array.Empty<Reply>(), "Isaac Newton", null, AiProvider.Claude);
+        var body = await gen.GenerateReplyBodyAsync(SamplePost(), Array.Empty<Reply>(), "Isaac Newton", null, null, AiProvider.Claude, AiContext.Default);
 
         Assert.Equal("Calculus was mine first.", body);
     }
@@ -103,7 +103,7 @@ public class ReplyGeneratorTests
     public async Task Plain_text_reply_is_returned_as_is()
     {
         var gen = new ReplyGenerator(new[] { new FakeAiProvider(AiProvider.OpenAI, "just some prose") });
-        var body = await gen.GenerateReplyBodyAsync(SamplePost(), Array.Empty<Reply>(), "Ada Lovelace", null, AiProvider.OpenAI);
+        var body = await gen.GenerateReplyBodyAsync(SamplePost(), Array.Empty<Reply>(), "Ada Lovelace", null, null, AiProvider.OpenAI, AiContext.Default);
         Assert.Equal("just some prose", body);
     }
 

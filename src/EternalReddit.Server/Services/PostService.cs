@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace EternalReddit.Server.Services;
 
-public sealed record CreatePostRequest(string? Title, string Body, string AuthorUserId, string AuthorName, string Ip);
+public sealed record CreatePostRequest(string? Title, string Body, string AuthorUserId, string AuthorName, string Ip, string Community = "");
 
 public enum CreatePostStatus { Created, RateLimited, Blocked, Banned }
 
@@ -24,8 +24,8 @@ public interface IPostService
 {
     Task<CreatePostResult> CreateAsync(CreatePostRequest request, CancellationToken ct = default);
 
-    /// <summary>Create an original post authored by a character (no rate limit); returns null if moderation blocks it.</summary>
-    Task<Post?> CreateSystemPostAsync(string authorName, string? title, string body, CancellationToken ct = default);
+    /// <summary>Create an original post authored by a character into a community (no rate limit); returns null if moderation blocks it.</summary>
+    Task<Post?> CreateSystemPostAsync(string communitySlug, string authorName, string? title, string body, CancellationToken ct = default);
 
     /// <summary>Generate and thread one approved-figure reply into a post; returns it, or null if blocked/failed.</summary>
     Task<Reply?> GenerateReplyInto(Post post, AiProvider provider, CancellationToken ct = default);
@@ -50,6 +50,8 @@ public sealed class PostService : IPostService
     private readonly IModerator _moderator;
     private readonly IReplyGenerator _generator;
     private readonly IFeedNotifier _notifier;
+    private readonly ICommunityStore _communities;
+    private readonly IRosterService _roster;
     private readonly ILogger<PostService> _logger;
 
     public PostService(
@@ -60,6 +62,8 @@ public sealed class PostService : IPostService
         IModerator moderator,
         IReplyGenerator generator,
         IFeedNotifier notifier,
+        ICommunityStore communities,
+        IRosterService roster,
         ILogger<PostService> logger)
     {
         _posts = posts;
@@ -69,7 +73,16 @@ public sealed class PostService : IPostService
         _moderator = moderator;
         _generator = generator;
         _notifier = notifier;
+        _communities = communities;
+        _roster = roster;
         _logger = logger;
+    }
+
+    // Resolve a sub slug to its community, defaulting to the open "allofhistory" sub.
+    private Community ResolveCommunity(string? slug)
+    {
+        if (!string.IsNullOrWhiteSpace(slug) && _communities.Get(slug) is { } c) return c;
+        return _communities.Get("allofhistory") ?? new Community { Slug = "allofhistory", Name = "AllOfHistory" };
     }
 
     public IReadOnlyList<Post> GetRecent(int count = 50) => _posts.GetRecent(count);
@@ -81,7 +94,7 @@ public sealed class PostService : IPostService
         foreach (var post in _posts.GetRecent(int.MaxValue))
         {
             var before = post.Replies.Count;
-            post.Replies.RemoveAll(r => r.Provider != AiProvider.Scripted && !Figures.IsApproved(r.Figure));
+            post.Replies.RemoveAll(r => r.Provider != AiProvider.Scripted && !_roster.IsApproved(r.Figure));
             if (post.Replies.Count == before) continue;
 
             // Re-root any comment whose parent was just removed, so it stays visible.
@@ -130,6 +143,7 @@ public sealed class PostService : IPostService
                 return CreatePostResult.Blocked(outcome.Verdict.ToString());
         }
 
+        var community = ResolveCommunity(request.Community);
         var post = new Post
         {
             Title = request.Title,
@@ -137,10 +151,11 @@ public sealed class PostService : IPostService
             AuthorUserId = request.AuthorUserId,
             AuthorName = request.AuthorName,
             AuthorIp = request.Ip,
+            Community = community.Slug,
             CreatedUtc = DateTime.UtcNow
         };
         _posts.Add(post);
-        _logger.LogInformation("Post created by {Author}", string.IsNullOrWhiteSpace(post.AuthorName) ? "anonymous" : post.AuthorName);
+        _logger.LogInformation("Post created by {Author} in {Sub}", string.IsNullOrWhiteSpace(post.AuthorName) ? "anonymous" : post.AuthorName, community.Slug);
 
         // The running gag: Christopher Columbus is always first.
         post.Replies.Insert(0, new Reply
@@ -157,7 +172,7 @@ public sealed class PostService : IPostService
         return CreatePostResult.Created(post);
     }
 
-    public async Task<Post?> CreateSystemPostAsync(string authorName, string? title, string body, CancellationToken ct = default)
+    public async Task<Post?> CreateSystemPostAsync(string communitySlug, string authorName, string? title, string body, CancellationToken ct = default)
     {
         var outcome = await _moderator.ReviewAsync(body, ct);
         if (!outcome.IsAllowed)
@@ -172,6 +187,7 @@ public sealed class PostService : IPostService
             Body = body,
             AuthorName = authorName,
             AuthorIp = "system",
+            Community = ResolveCommunity(communitySlug).Slug,
             CreatedUtc = DateTime.UtcNow
         };
         _posts.Add(post);
@@ -304,13 +320,16 @@ public sealed class PostService : IPostService
     public async Task<Reply?> GenerateReplyInto(Post post, AiProvider provider, CancellationToken ct = default)
     {
         // Decide the parent first so the reply can address it with full branch context,
-        // and pick the speaking figure from the approved cast (never the model's choice).
+        // and pick the speaking figure from the sub's peer groups (never the model's choice).
+        var community = ResolveCommunity(post.Community);
         var parent = PickParent(post.Replies);
-        var figure = Figures.Pick(exclude: parent?.Figure);
+        var figure = _roster.Pick(community.GroupIds, exclude: parent?.Figure);
+        var persona = _roster.Persona(figure);
         var branch = BranchTo(post.Replies, parent);
+        var ctx = new AiContext(community.Name, community.Description, community.ResolveModel(provider));
         try
         {
-            var body = await _generator.GenerateReplyBodyAsync(post, branch, figure, parent?.Figure, provider, ct);
+            var body = await _generator.GenerateReplyBodyAsync(post, branch, figure, persona, parent?.Figure, provider, ctx, ct);
 
             var outcome = await _moderator.ReviewAsync(body, ct);
             LogDecision(TargetKind.Reply, body, outcome, userId: null, ip: post.AuthorIp);

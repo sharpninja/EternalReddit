@@ -13,5 +13,5 @@ public interface IAiProvider
     /// <summary>True when a key is present so this provider can actually be called.</summary>
     bool IsConfigured { get; }
 
-    Task<string> CompleteAsync(string system, string user, int maxTokens, CancellationToken ct = default);
+    Task<string> CompleteAsync(string system, string user, int maxTokens, string? model = null, CancellationToken ct = default);
 }

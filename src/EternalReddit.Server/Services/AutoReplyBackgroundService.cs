@@ -90,8 +90,8 @@ public sealed class AutoReplyBackgroundService : BackgroundService
         {
             var menu = candidates.Select((p, i) => MenuLine(p, i + 1, now)).ToList();
             var pick = await _generator.ChooseAsync(menu,
-                "You are a historical figure browsing r/AllOfHistory. From these active threads (last 24h, busiest first), choose the ONE you most want to jump into with a comment.",
-                provider, ct);
+                "You are a historical figure browsing EternalReddit. From these active threads (last 24h, busiest first), choose the ONE you most want to jump into with a comment.",
+                provider, ct: ct);
             chosen = candidates[Math.Clamp(pick - 1, 0, candidates.Count - 1)];
         }
 

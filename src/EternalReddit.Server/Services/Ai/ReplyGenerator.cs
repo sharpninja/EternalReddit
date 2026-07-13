@@ -21,13 +21,13 @@ public interface IReplyGenerator
     /// is set the reply addresses them directly, given the ancestor <paramref name="branch"/>
     /// (root → parent) for context.
     /// </summary>
-    Task<string> GenerateReplyBodyAsync(Post post, IReadOnlyList<Reply> branch, string figure, string? parentFigure, AiProvider provider, CancellationToken ct = default);
+    Task<string> GenerateReplyBodyAsync(Post post, IReadOnlyList<Reply> branch, string figure, string? persona, string? parentFigure, AiProvider provider, AiContext ctx, CancellationToken ct = default);
 
     /// <summary>An original post in <paramref name="figure"/>'s voice.</summary>
-    Task<PostDraft> GeneratePostAsync(string figure, AiProvider provider, CancellationToken ct = default);
+    Task<PostDraft> GeneratePostAsync(string figure, string? persona, AiProvider provider, AiContext ctx, CancellationToken ct = default);
 
     /// <summary>Let the model pick one option (1-based) from a numbered menu; returns the chosen number.</summary>
-    Task<int> ChooseAsync(IReadOnlyList<string> options, string instruction, AiProvider provider, CancellationToken ct = default);
+    Task<int> ChooseAsync(IReadOnlyList<string> options, string instruction, AiProvider provider, string? modelId = null, CancellationToken ct = default);
 }
 
 public sealed class ReplyGenerator : IReplyGenerator
@@ -43,35 +43,34 @@ public sealed class ReplyGenerator : IReplyGenerator
 
     public IReadOnlyList<AiProvider> Available { get; }
 
-    public async Task<string> GenerateReplyBodyAsync(Post post, IReadOnlyList<Reply> branch, string figure, string? parentFigure, AiProvider provider, CancellationToken ct = default)
+    public async Task<string> GenerateReplyBodyAsync(Post post, IReadOnlyList<Reply> branch, string figure, string? persona, string? parentFigure, AiProvider provider, AiContext ctx, CancellationToken ct = default)
     {
         var ai = Resolve(provider);
-        var text = await ai.CompleteAsync(ReplySystem(figure, parentFigure), BuildBranchPrompt(post, branch, figure, parentFigure), 400, ct);
+        var text = await ai.CompleteAsync(ReplySystem(figure, persona, parentFigure, ctx.CommunityName), BuildBranchPrompt(post, branch, figure, parentFigure), 400, ctx.ModelId, ct);
         return CleanText(text);
     }
 
-    public async Task<PostDraft> GeneratePostAsync(string figure, AiProvider provider, CancellationToken ct = default)
+    public async Task<PostDraft> GeneratePostAsync(string figure, string? persona, AiProvider provider, AiContext ctx, CancellationToken ct = default)
     {
         var ai = Resolve(provider);
-        var persona = Figures.Persona(figure);
         var system =
             $"You are {figure}." + (persona is null ? "" : $" {persona}") +
-            " You are writing an original post on r/AllOfHistory, where historical, legendary, and mythical " +
+            $" You are writing an original post on r/{ctx.CommunityName}, where historical, legendary, and mythical " +
             "figures post as contemporaries. Write a short post fully in character - a question, hot take, or " +
             "wry observation. Never build humor on, or glorify, atrocity, genocide, slavery, or violent conquest. " +
             "Do not fabricate real quotes. Reply with ONLY a JSON object: " +
             "{\"title\":\"a short title\",\"body\":\"1-3 sentences\"}.";
-        return ParsePost(await ai.CompleteAsync(system, "Write your post now.", 400, ct));
+        return ParsePost(await ai.CompleteAsync(system, "Write your post now.", 400, ctx.ModelId, ct));
     }
 
-    public async Task<int> ChooseAsync(IReadOnlyList<string> options, string instruction, AiProvider provider, CancellationToken ct = default)
+    public async Task<int> ChooseAsync(IReadOnlyList<string> options, string instruction, AiProvider provider, string? modelId = null, CancellationToken ct = default)
     {
         var ai = Resolve(provider);
         var sb = new StringBuilder();
         sb.Append(instruction).Append("\n\n");
         foreach (var o in options) sb.Append(o).Append('\n');
         sb.Append("\nReply with ONLY the number of your choice.");
-        var text = await ai.CompleteAsync("You choose one option from a numbered list. Answer with only the number.", sb.ToString(), 12, ct);
+        var text = await ai.CompleteAsync("You choose one option from a numbered list. Answer with only the number.", sb.ToString(), 12, modelId, ct);
         var m = System.Text.RegularExpressions.Regex.Match(text ?? "", "\\d+");
         return m.Success && int.TryParse(m.Value, out var n) && n >= 1 ? n : 1;
     }
@@ -80,11 +79,10 @@ public sealed class ReplyGenerator : IReplyGenerator
         => _providers.TryGetValue(provider, out var ai) ? ai
             : throw new InvalidOperationException($"Provider {provider} is not configured.");
 
-    private static string ReplySystem(string figure, string? parentFigure)
+    private static string ReplySystem(string figure, string? persona, string? parentFigure, string communityName)
     {
-        var persona = Figures.Persona(figure);
         return $"You are {figure}." + (persona is null ? "" : $" {persona}") +
-           " You are commenting on r/AllOfHistory, where historical, legendary, and mythical figures talk as " +
+           $" You are commenting on r/{communityName}, where historical, legendary, and mythical figures talk as " +
            "contemporaries. Stay fully in character and in that voice. " +
            (parentFigure is null
                ? "Write a top-level comment on the post. "

@@ -1,3 +1,5 @@
+using EternalReddit.Server.Data;
+using EternalReddit.Server.Data.Seeding;
 using EternalReddit.Server.Services;
 using EternalReddit.Server.Services.Ai;
 using EternalReddit.Server.Services.Moderation;
@@ -20,7 +22,12 @@ public class PostServiceTests
         var limiter = new SlidingWindowRateLimiter(new FakeClock(), rateLimit, TimeSpan.FromMinutes(1));
         var moderator = new Moderator(classifier ?? new StubClassifier(ModerationVerdict.Clean));
         var gen = generator ?? new ReplyGenerator(Array.Empty<IAiProvider>());
-        return new PostService(_posts, _users, _logs, limiter, moderator, gen, new NullFeedNotifier(), NullLogger<PostService>.Instance);
+        var groups = new InMemoryPeerGroupStore();
+        var figures = new InMemoryFigureStore();
+        var communities = new InMemoryCommunityStore();
+        RosterSeed.EnsureSeeded(groups, figures, communities);
+        var roster = new RosterService(figures);
+        return new PostService(_posts, _users, _logs, limiter, moderator, gen, new NullFeedNotifier(), communities, roster, NullLogger<PostService>.Instance);
     }
 
     private static CreatePostRequest Req(string body, string ip = "1.1.1.1", string user = "google:abc")
@@ -119,7 +126,7 @@ public class PostServiceTests
         });
         var svc = Build(gen);
 
-        var post = await svc.CreateSystemPostAsync("Isaac Newton", "Gravity is underrated", "Discuss.");
+        var post = await svc.CreateSystemPostAsync("allofhistory", "Isaac Newton", "Gravity is underrated", "Discuss.");
 
         Assert.NotNull(post);
         Assert.Equal("Isaac Newton", post!.AuthorName);

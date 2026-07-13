@@ -58,6 +58,7 @@ builder.Services.AddSingleton<IAiProvider, OpenAiProvider>();
 builder.Services.AddSingleton<IAiProvider, GrokProvider>();
 builder.Services.AddSingleton<IAiProvider, HuggingFaceProvider>();
 builder.Services.AddSingleton<IReplyGenerator, ReplyGenerator>();
+builder.Services.AddSingleton<IRosterService, RosterService>();
 
 // --- Live updates (SignalR) ---
 builder.Services.AddSignalR();
