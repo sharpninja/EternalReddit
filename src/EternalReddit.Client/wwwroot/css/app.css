@@ -62,6 +62,11 @@
 
 * { box-sizing: border-box; }
 
+/* Form controls follow the theme: without an explicit color they inherit the
+   browser default (black), which is invisible on the dark palette. */
+input, textarea, select { color: var(--ink); }
+input::placeholder, textarea::placeholder { color: var(--dim); opacity: 1; }
+
 html, body {
     margin: 0;
     font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
