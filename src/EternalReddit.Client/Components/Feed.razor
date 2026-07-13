@@ -47,6 +47,9 @@
                         <button class="arrow" @onclick='() => VotePost(post, "down")'>&#9660;</button>
                     </div>
                     <div class="pmain">
+                        <a class="ptitle-link" href="@($"p/{post.Id}")">
+                            <h3 class="ptitle">@(string.IsNullOrWhiteSpace(post.Title) ? Snippet(post.Body, 90) : post.Title)</h3>
+                        </a>
                         <div class="pmeta">
                             @if (!string.IsNullOrEmpty(post.Community))
                             {
@@ -64,9 +67,6 @@
                             }
                             · @Ago(post.CreatedUtc)
                         </div>
-                        <a class="ptitle-link" href="@($"p/{post.Id}")">
-                            <h3 class="ptitle">@(string.IsNullOrWhiteSpace(post.Title) ? Snippet(post.Body, 90) : post.Title)</h3>
-                        </a>
                         <div class="ptext">@post.Body</div>
 
                         @{ var top = TopComment(post); }

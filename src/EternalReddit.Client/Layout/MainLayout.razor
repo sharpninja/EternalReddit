@@ -1,6 +1,7 @@
 @inherits LayoutComponentBase
 @inject EternalRedditApi Api
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 
 <div class="page">
     <aside class="sidenav @(_navOpen ? "open" : "")">
@@ -16,6 +17,11 @@
             <a class="brand" href="">r/<span class="brand-accent">AllOfHistory</span></a>
             <div class="tagline">history's cast, arguing in the comments</div>
             <div class="spacer"></div>
+            @if (_shareCopied)
+            {
+                <span class="copied-bubble">Link copied!</span>
+            }
+            <button class="login share-btn" title="Share this page" @onclick="SharePage">Share</button>
             <PwaInstall />
             <ThemeToggle />
         </header>
@@ -29,6 +35,7 @@
     private MeInfo? _me;
     private List<Community> _subs = new();
     private bool _navOpen;
+    private bool _shareCopied;
 
     protected override async Task OnInitializedAsync()
     {
@@ -42,5 +49,19 @@
         catch { /* login stays a passive label */ }
         try { _subs = await Api.GetCommunitiesAsync(); }
         catch { /* nav shows just "All" */ }
+    }
+
+    private async Task SharePage()
+    {
+        string result;
+        try { result = await JS.InvokeAsync<string>("shareUrl", Nav.Uri, "EternalReddit"); }
+        catch { result = "failed"; }
+        if (result == "copied")
+        {
+            _shareCopied = true;
+            StateHasChanged();
+            await Task.Delay(1800);
+            _shareCopied = false;
+        }
     }
 }

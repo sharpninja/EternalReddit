@@ -28,6 +28,16 @@
                 set: function (t) { localStorage.setItem('theme', t); apply(); }
             };
             apply();
+
+            // Share the current page: native share sheet where available, else clipboard.
+            window.shareUrl = async function (url, title) {
+                if (navigator.share) {
+                    try { await navigator.share({ url: url, title: title }); return 'shared'; }
+                    catch (e) { return 'dismissed'; }
+                }
+                try { await navigator.clipboard.writeText(url); return 'copied'; }
+                catch (e) { return 'failed'; }
+            };
         })();
     </script>
     <link rel="apple-touch-icon" href="icon-192.png" />

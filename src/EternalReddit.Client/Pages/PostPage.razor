@@ -26,6 +26,10 @@
                 <button class="arrow" @onclick='() => VotePost("down")'>&#9660;</button>
             </div>
             <div class="pmain">
+                @if (!string.IsNullOrWhiteSpace(_post.Title))
+                {
+                    <h3 class="ptitle">@_post.Title</h3>
+                }
                 <div class="pmeta">
                     @if (!string.IsNullOrEmpty(_post.Community))
                     {
@@ -43,10 +47,6 @@
                     }
                     · @Ago(_post.CreatedUtc)
                 </div>
-                @if (!string.IsNullOrWhiteSpace(_post.Title))
-                {
-                    <h3 class="ptitle">@_post.Title</h3>
-                }
                 <div class="ptext">@_post.Body</div>
                 <div class="pactions">
                     <span>@_post.Replies.Count comments</span>
