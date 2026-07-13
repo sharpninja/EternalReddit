@@ -94,6 +94,21 @@
                 });
             }
         })();
+
+        // Flyout support: the sidenav opens below the sticky header, so publish the
+        // header's measured height as --topbar-h; auto-hide only applies to phones
+        // in portrait (queried from Blazor on navigation).
+        (function () {
+            var apply = function () {
+                var t = document.querySelector('.topbar');
+                if (t) document.documentElement.style.setProperty('--topbar-h', t.offsetHeight + 'px');
+            };
+            new MutationObserver(apply).observe(document.body, { childList: true, subtree: true });
+            window.addEventListener('resize', apply);
+        })();
+        window.esIsPhonePortrait = function () {
+            return window.matchMedia('(max-width: 640px) and (orientation: portrait)').matches;
+        };
     </script>
     <style>
         /* Reserve room for the EternalSocial pinned footer; --es-footer-h is

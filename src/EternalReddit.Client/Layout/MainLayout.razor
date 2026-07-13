@@ -39,12 +39,21 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Close the mobile menu whenever navigation happens (a nav item was clicked).
-        Nav.LocationChanged += (_, _) =>
+        // The flyout is a toggled panel: it stays open across navigation. Only phones
+        // in portrait auto-hide it after a nav item is clicked (matching the backdrop,
+        // which CSS shows only there).
+        Nav.LocationChanged += (_, _) => _ = InvokeAsync(async () =>
         {
-            _navOpen = false;
-            _ = InvokeAsync(StateHasChanged);
-        };
+            if (!_navOpen) return;
+            var phonePortrait = false;
+            try { phonePortrait = await JS.InvokeAsync<bool>("esIsPhonePortrait"); }
+            catch { /* treat as not-a-phone; the panel stays open */ }
+            if (phonePortrait)
+            {
+                _navOpen = false;
+                StateHasChanged();
+            }
+        });
         try { _me = await Api.GetMeAsync(); }
         catch { /* login stays a passive label */ }
         try { _subs = await Api.GetCommunitiesAsync(); }
