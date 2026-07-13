@@ -1,0 +1,28 @@
+@namespace EternalReddit.Client.Components
+@inject IJSRuntime JS
+
+<button class="theme-toggle" title="@(_dark ? "Switch to light mode" : "Switch to dark mode")" @onclick="Toggle">
+    @(_dark ? "☀️" : "\U0001F319")
+</button>
+
+@code {
+    private bool _dark;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        try
+        {
+            var dark = await JS.InvokeAsync<bool>("theme.isDark");
+            if (dark != _dark) { _dark = dark; StateHasChanged(); }
+        }
+        catch { /* default icon until JS is ready */ }
+    }
+
+    private async Task Toggle()
+    {
+        _dark = !_dark;
+        try { await JS.InvokeVoidAsync("theme.set", _dark ? "dark" : "light"); }
+        catch { /* theme falls back to system preference */ }
+    }
+}

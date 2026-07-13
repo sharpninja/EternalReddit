@@ -10,7 +10,26 @@
     <link rel="stylesheet" href="css/app.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
     <link rel="manifest" href="manifest.webmanifest" />
-    <meta name="theme-color" content="#ff4500" />
+    <meta name="theme-color" content="#ff4500" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1a1d1f" media="(prefers-color-scheme: dark)" />
+    <script>
+        // Theme bootstrap: apply the stored choice before anything renders (no flash).
+        (function () {
+            function apply() {
+                var t = localStorage.getItem('theme');
+                if (t) document.documentElement.setAttribute('data-theme', t);
+                else document.documentElement.removeAttribute('data-theme');
+            }
+            window.theme = {
+                isDark: function () {
+                    var t = localStorage.getItem('theme');
+                    return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+                },
+                set: function (t) { localStorage.setItem('theme', t); apply(); }
+            };
+            apply();
+        })();
+    </script>
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="EternalReddit" />

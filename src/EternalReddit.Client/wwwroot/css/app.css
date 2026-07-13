@@ -11,6 +11,53 @@
     --claude: #ff9e64;
     --openai: #3fb950;
     --huggingface: #ffcf56;
+    --accent-soft-bg: #fff0e9;
+    --accent-soft-line: #ffd6c2;
+    --gold-ink: #9a6b00;
+    --gold-bg: #fff4d6;
+    --gold-line: #e8cf8a;
+    --claude-ink: #c96a1e;
+    --grok-ink: #4a6fd8;
+    --openai-ink: #2b8a44;
+    --hf-ink: #9a7b00;
+}
+
+/* Dark palette: applied when explicitly chosen... */
+:root[data-theme="dark"] {
+    --bg: #0e1113;
+    --card: #1a1d1f;
+    --line: #2e3236;
+    --ink: #d7dadc;
+    --dim: #8f9294;
+    --accent-soft-bg: rgba(255, 69, 0, 0.14);
+    --accent-soft-line: rgba(255, 69, 0, 0.4);
+    --gold-ink: #e8c268;
+    --gold-bg: rgba(232, 194, 104, 0.12);
+    --gold-line: rgba(232, 194, 104, 0.4);
+    --claude-ink: #ffb076;
+    --grok-ink: #9db8ff;
+    --openai-ink: #5ed07a;
+    --hf-ink: #ffd97a;
+}
+
+/* ...or when the system prefers dark and no explicit light choice was made. */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --bg: #0e1113;
+        --card: #1a1d1f;
+        --line: #2e3236;
+        --ink: #d7dadc;
+        --dim: #8f9294;
+        --accent-soft-bg: rgba(255, 69, 0, 0.14);
+        --accent-soft-line: rgba(255, 69, 0, 0.4);
+        --gold-ink: #e8c268;
+        --gold-bg: rgba(232, 194, 104, 0.12);
+        --gold-line: rgba(232, 194, 104, 0.4);
+        --claude-ink: #ffb076;
+        --grok-ink: #9db8ff;
+        --openai-ink: #5ed07a;
+        --hf-ink: #ffd97a;
+    }
 }
 
 * { box-sizing: border-box; }
@@ -51,6 +98,10 @@ form.nav-auth .login { width: 100%; }
 .nav-toggle {
     display: none; background: none; border: none; font-size: 1.25rem;
     cursor: pointer; color: var(--ink); padding: 0 4px; line-height: 1;
+}
+.theme-toggle {
+    background: none; border: none; font-size: 1.05rem; cursor: pointer;
+    padding: 0 4px; line-height: 1; margin-left: 4px;
 }
 .sidenav-backdrop { display: none; }
 
@@ -242,14 +293,14 @@ table.logs tr:first-child td { border-top: none; }
 /* ---- Columbus "Flag Planter" achievement ---- */
 .achievement {
     display: inline-block; margin-left: 6px; font-size: 0.62rem; font-weight: 700;
-    color: #9a6b00; background: #fff4d6; border: 1px solid #e8cf8a;
+    color: var(--gold-ink); background: var(--gold-bg); border: 1px solid var(--gold-line);
     padding: 0 6px; border-radius: 3px; text-transform: uppercase;
 }
 
 /* ---- subs: badge, composer picker, topbar switcher ---- */
 .subbadge {
     display: inline-block; font-size: 0.72rem; font-weight: 700; color: var(--accent);
-    background: #fff0e9; border: 1px solid #ffd6c2; padding: 0 7px; border-radius: 999px;
+    background: var(--accent-soft-bg); border: 1px solid var(--accent-soft-line); padding: 0 7px; border-radius: 999px;
 }
 .subbadge:hover { background: var(--accent); color: #fff; }
 .sub-select, .sub-switcher {
@@ -299,10 +350,10 @@ table.logs tr:first-child td { border-top: none; }
     display: inline-block; font-size: 0.68rem; font-weight: 600;
     border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px;
 }
-.badge-claude-outline { border-color: var(--claude); color: #c96a1e; }
-.badge-grok-outline { border-color: var(--grok); color: #4a6fd8; }
-.badge-openai-outline { border-color: var(--openai); color: #2b8a44; }
-.badge-huggingface-outline { border-color: var(--huggingface); color: #9a7b00; }
+.badge-claude-outline { border-color: var(--claude); color: var(--claude-ink); }
+.badge-grok-outline { border-color: var(--grok); color: var(--grok-ink); }
+.badge-openai-outline { border-color: var(--openai); color: var(--openai-ink); }
+.badge-huggingface-outline { border-color: var(--huggingface); color: var(--hf-ink); }
 
 /* ---- profile + clickable names ---- */
 .profile-head { margin-bottom: 14px; }
