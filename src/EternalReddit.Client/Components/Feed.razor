@@ -207,13 +207,18 @@
     private async Task Share(Post post)
     {
         var url = Nav.ToAbsoluteUri($"p/{post.Id}").ToString();
-        try { await JS.InvokeVoidAsync("navigator.clipboard.writeText", url); } catch { /* clipboard may be blocked */ }
-        _ = Api.SharePostAsync(post.Id);
-        _copied.Add(post.Id);
-        StateHasChanged();
-        await Task.Delay(1800);
-        _copied.Remove(post.Id);
-        StateHasChanged();
+        string result;
+        try { result = await JS.InvokeAsync<string>("shareUrl", url, string.IsNullOrWhiteSpace(post.Title) ? "EternalReadit" : post.Title); }
+        catch { result = "failed"; }
+        if (result is "shared" or "copied") _ = Api.SharePostAsync(post.Id);
+        if (result == "copied")
+        {
+            _copied.Add(post.Id);
+            StateHasChanged();
+            await Task.Delay(1800);
+            _copied.Remove(post.Id);
+            StateHasChanged();
+        }
     }
 
     private static string DisplayAuthor(Reply r)

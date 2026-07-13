@@ -209,13 +209,18 @@
     {
         if (_post is null) return;
         var url = Nav.ToAbsoluteUri($"p/{_post.Id}").ToString();
-        try { await JS.InvokeVoidAsync("navigator.clipboard.writeText", url); } catch { /* clipboard may be blocked */ }
-        _ = Api.SharePostAsync(_post.Id);
-        _copied = true;
-        StateHasChanged();
-        await Task.Delay(1800);
-        _copied = false;
-        StateHasChanged();
+        string result;
+        try { result = await JS.InvokeAsync<string>("shareUrl", url, string.IsNullOrWhiteSpace(_post.Title) ? "EternalReadit" : _post.Title); }
+        catch { result = "failed"; }
+        if (result is "shared" or "copied") _ = Api.SharePostAsync(_post.Id);
+        if (result == "copied")
+        {
+            _copied = true;
+            StateHasChanged();
+            await Task.Delay(1800);
+            _copied = false;
+            StateHasChanged();
+        }
     }
 
     private static string Cap(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
