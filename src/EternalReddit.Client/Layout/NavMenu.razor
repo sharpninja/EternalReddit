@@ -1,4 +1,5 @@
 @namespace EternalReddit.Client.Layout
+@inject NavigationManager Nav
 
 <nav class="sidenav-inner">
     <div class="sidenav-section">
@@ -19,16 +20,23 @@
             {
                 <NavLink class="nav-item" href="admin">Admin</NavLink>
             }
-            @* Relative action so the <base href> (path prefix behind the proxy) applies. *@
-            <form method="post" action="logout" class="nav-auth">
+            @* Gateway mode signs out at the proxy root; standalone stays base-relative. *@
+            <form method="post" action="@(Me.Gateway ? "/logout" : "logout")" class="nav-auth">
                 <button class="login" type="submit">Log out</button>
             </form>
         }
         else if (Me is not null && Me.Providers.Length > 0)
         {
-            @foreach (var p in Me.Providers)
+            @if (Me.Gateway)
             {
-                <a class="login nav-auth" href="@($"login/{p}")">Log in with @p</a>
+                <a class="login nav-auth" href="@($"/login?returnUrl={Uri.EscapeDataString(Nav.Uri)}")">Log in with Google</a>
+            }
+            else
+            {
+                @foreach (var p in Me.Providers)
+                {
+                    <a class="login nav-auth" href="@($"login/{p}")">Log in with @p</a>
+                }
             }
         }
         else

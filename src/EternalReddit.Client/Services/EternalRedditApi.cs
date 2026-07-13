@@ -23,7 +23,7 @@ public sealed class EternalRedditApi
     }
 
     public async Task<MeInfo> GetMeAsync()
-        => await _http.GetFromJsonAsync<MeInfo>("api/me") ?? new MeInfo(false, null, Array.Empty<string>(), false);
+        => await _http.GetFromJsonAsync<MeInfo>("api/me") ?? new MeInfo(false, null, Array.Empty<string>(), false, false);
 
     public async Task<List<Post>?> GetMyPostsAsync()
     {
@@ -147,5 +147,6 @@ public sealed record AdminStats(int Posts, int Comments, int HumanComments, int 
 public sealed record ProviderModels(AiProvider Provider, List<string> Models, string DefaultModel);
 
 /// <summary>Current auth state plus the OAuth providers the server has configured.</summary>
-public sealed record MeInfo(bool Authenticated, string? Name, string[] Providers, bool IsAdmin);
+/// <summary>Auth state. Gateway = sign-in happens at the EternalSocial proxy root, not in this app.</summary>
+public sealed record MeInfo(bool Authenticated, string? Name, string[] Providers, bool IsAdmin, bool Gateway);
 

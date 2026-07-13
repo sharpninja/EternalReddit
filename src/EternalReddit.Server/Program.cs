@@ -69,7 +69,19 @@ builder.Services.AddSingleton<IPostService, PostService>();
 builder.Services.AddHostedService<AutoReplyBackgroundService>();
 builder.Services.AddHostedService<CharacterPostBackgroundService>();
 
-// --- Authentication (OIDC: Google, Microsoft, GitHub) ---
+// --- Authentication ---
+// Gateway mode (GATEWAY_KEY set): the EternalSocial proxy owns the Google OIDC
+// flow and forwards identity headers; the app authenticates purely from them.
+// Standalone mode: the app's own cookie + OIDC providers, as before.
+var gatewayMode = !string.IsNullOrWhiteSpace(builder.Configuration["GATEWAY_KEY"]);
+if (gatewayMode)
+{
+    builder.Services.AddAuthentication(GatewayAuthHandler.Scheme)
+        .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, GatewayAuthHandler>(GatewayAuthHandler.Scheme, _ => { });
+}
+else
+{
+
 // A provider is only registered when its ClientId is configured, so the app
 // runs (anonymous reads, /health) without any OAuth credentials set. An
 // unregistered scheme with an empty ClientId would fail options validation on
@@ -170,6 +182,8 @@ if (!string.IsNullOrWhiteSpace(githubClientId))
     });
 }
 
+} // end standalone auth registration
+
 var adminEmail = AdminAccess.ConfiguredEmail(builder.Configuration);
 builder.Services.AddAuthorization(options =>
     options.AddPolicy(AdminAccess.PolicyName, p => p.RequireAssertion(ctx => AdminAccess.IsAdmin(ctx.User, adminEmail))));
@@ -257,16 +271,20 @@ app.MapPost("/logout", async (HttpContext http) =>
 
 app.MapGet("/api/me", async (HttpContext http, IAuthenticationSchemeProvider schemes, IConfiguration config) =>
 {
-    var providers = (await schemes.GetAllSchemesAsync())
-        .Where(s => s.Name != "Cookies" && s.Name != "Test")
-        .Select(s => s.Name)
-        .ToArray();
+    var gateway = !string.IsNullOrWhiteSpace(config["GATEWAY_KEY"]);
+    var providers = gateway
+        ? new[] { "Google" } // the EternalSocial gateway signs users in with Google
+        : (await schemes.GetAllSchemesAsync())
+            .Where(s => s.Name != "Cookies" && s.Name != "Test" && s.Name != EternalReddit.Server.Auth.GatewayAuthHandler.Scheme)
+            .Select(s => s.Name)
+            .ToArray();
     return Results.Ok(new
     {
         authenticated = http.User.Identity?.IsAuthenticated ?? false,
         name = http.User.Identity?.Name,
         providers,
-        isAdmin = AdminAccess.IsAdmin(http.User, AdminAccess.ConfiguredEmail(config))
+        isAdmin = AdminAccess.IsAdmin(http.User, AdminAccess.ConfiguredEmail(config)),
+        gateway
     });
 });
 

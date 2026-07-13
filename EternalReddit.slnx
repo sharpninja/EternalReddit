@@ -3,8 +3,10 @@
     <Project Path="src/EternalReddit.Client/EternalReddit.Client.csproj" />
     <Project Path="src/EternalReddit.Server/EternalReddit.Server.csproj" />
     <Project Path="src/EternalReddit.Shared/EternalReddit.Shared.csproj" />
+    <Project Path="src/EternalSocial.Proxy/EternalSocial.Proxy.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/EternalReddit.Tests/EternalReddit.Tests.csproj" />
+    <Project Path="tests/EternalSocial.Proxy.Tests/EternalSocial.Proxy.Tests.csproj" />
   </Folder>
 </Solution>
