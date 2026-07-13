@@ -336,6 +336,9 @@ table.logs tr:first-child td { border-top: none; }
 .admin-model-row .title-input { margin-bottom: 0; }
 .admin-stats { display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.85rem; }
 .link.danger:hover { color: #e5484d; }
+a.btn { display: inline-block; text-decoration: none; text-align: center; }
+.danger-btn { background: #c73438; }
+.danger-btn:hover { background: #e5484d; }
 .linklike {
     background: none; border: none; padding: 0; font: inherit; font-weight: 700;
     color: var(--accent); cursor: pointer; text-align: left;

@@ -121,6 +121,12 @@ public sealed class EternalRedditApi
     public async Task<List<ModerationLog>> AdminGetModerationLogAsync(int count = 100)
         => await _http.GetFromJsonAsync<List<ModerationLog>>($"api/admin/moderation-log?count={count}") ?? new();
 
+    public Task<HttpResponseMessage> AdminRestoreAsync(string exportJson)
+        => _http.PostAsync("api/admin/restore", new StringContent(exportJson, System.Text.Encoding.UTF8, "application/json"));
+
+    public Task<HttpResponseMessage> AdminClearFeedAsync()
+        => _http.PostAsync("api/admin/clear-feed", null);
+
     public Task<HttpResponseMessage> AdminSeedAsync(string figure, string? sub = null)
         => _http.PostAsync($"api/seed?figure={Uri.EscapeDataString(figure)}{(string.IsNullOrEmpty(sub) ? "" : $"&sub={Uri.EscapeDataString(sub)}")}", null);
 

@@ -14,6 +14,7 @@ public sealed class InMemoryPostStore : IPostStore
     public void Add(Post post) => _posts.Add(post);
     public void Update(Post post) { /* same reference in-memory; nothing to persist */ }
     public bool Delete(Guid id) => _posts.RemoveAll(p => p.Id == id) > 0;
+    public void Clear() => _posts.Clear();
 
     public int Count => _posts.Count;
 }
@@ -24,6 +25,7 @@ public sealed class InMemoryUserStore : IUserStore
     public User? Get(string id) => _users.TryGetValue(id, out var u) ? u : null;
     public void Upsert(User user) => _users[user.Id] = user;
     public IReadOnlyList<User> GetAll() => _users.Values.ToList();
+    public void Clear() => _users.Clear();
 }
 
 public sealed class InMemoryModerationLogStore : IModerationLogStore

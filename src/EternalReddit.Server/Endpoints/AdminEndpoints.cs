@@ -14,6 +14,17 @@ public static class AdminEndpoints
 {
     public sealed record BanBody(string UserId, string? Name, string? Reason);
 
+    /// <summary>Versioned full snapshot of everything data-driven (export/restore).</summary>
+    public sealed record ExportBundle(
+        int Version,
+        DateTime ExportedUtc,
+        List<Post> Posts,
+        List<Community> Communities,
+        List<PeerGroup> PeerGroups,
+        List<Figure> Figures,
+        List<User> Users,
+        AppSettings Settings);
+
     public static IEndpointRouteBuilder MapAdminEndpoints(this IEndpointRouteBuilder app)
     {
         var admin = app.MapGroup("/api/admin").RequireAuthorization(AdminAccess.PolicyName);
@@ -106,6 +117,63 @@ public static class AdminEndpoints
         });
         admin.MapGet("/moderation-log", (IModerationLogStore log, int? count) =>
             Results.Ok(log.GetRecent(count is > 0 ? count.Value : 100)));
+
+        // --- Data management: export / restore / clear feed ---
+        admin.MapGet("/export", (IPostStore posts, ICommunityStore communities, IPeerGroupStore groups,
+                                 IFigureStore figures, IUserStore users, ISettingsStore settings) =>
+        {
+            var bundle = new ExportBundle(
+                1,
+                DateTime.UtcNow,
+                posts.GetRecent(int.MaxValue).ToList(),
+                communities.GetAll().ToList(),
+                groups.GetAll().ToList(),
+                figures.GetAll().ToList(),
+                users.GetAll().ToList(),
+                settings.Get());
+            var bytes = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(bundle, System.Text.Json.JsonSerializerOptions.Web);
+            return Results.File(bytes, "application/json", $"eternalreddit-export-{DateTime.UtcNow:yyyyMMdd-HHmmss}.json");
+        });
+
+        admin.MapPost("/restore", async (IPostStore posts, ICommunityStore communities, IPeerGroupStore groups,
+                                         IFigureStore figures, IUserStore users, ISettingsStore settings,
+                                         Services.IFeedNotifier notifier, ExportBundle bundle) =>
+        {
+            if (bundle.Version != 1) return Results.BadRequest("Unsupported export version.");
+            if (bundle.Posts is null || bundle.Communities is null || bundle.PeerGroups is null || bundle.Figures is null)
+                return Results.BadRequest("Malformed export bundle.");
+
+            // Replace everything with the snapshot.
+            posts.Clear();
+            users.Clear();
+            foreach (var c in communities.GetAll()) communities.Delete(c.Slug);
+            foreach (var g in groups.GetAll()) groups.Delete(g.Slug);
+            foreach (var f in figures.GetAll()) figures.Delete(f.Name);
+
+            foreach (var g in bundle.PeerGroups) groups.Upsert(g);
+            foreach (var f in bundle.Figures) figures.Upsert(f);
+            foreach (var c in bundle.Communities) communities.Upsert(c);
+            foreach (var p in bundle.Posts) posts.Add(p);
+            foreach (var u in bundle.Users ?? new List<User>()) users.Upsert(u);
+            settings.Save(bundle.Settings ?? new AppSettings());
+
+            await notifier.FeedChangedAsync();
+            return Results.Ok(new
+            {
+                posts = bundle.Posts.Count,
+                communities = bundle.Communities.Count,
+                peerGroups = bundle.PeerGroups.Count,
+                figures = bundle.Figures.Count,
+                users = bundle.Users?.Count ?? 0
+            });
+        });
+
+        admin.MapPost("/clear-feed", async (IPostStore posts, Services.IFeedNotifier notifier) =>
+        {
+            posts.Clear();
+            await notifier.FeedChangedAsync();
+            return Results.Ok();
+        });
 
         return app;
     }

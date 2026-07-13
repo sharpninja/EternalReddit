@@ -237,7 +237,7 @@
 
             @if (_stats is not null)
             {
-                <div class="side-card admin-section">
+                <div class="side-card admin-section stats-card">
                     <div class="side-title">Stats</div>
                     <div class="admin-stats">
                         <span>Posts: <b>@_stats.Posts</b></span>
@@ -252,12 +252,43 @@
                 </div>
             }
         }
+        else if (_tab == "data")
+        {
+            <div class="side-card admin-section">
+                <div class="side-title">Export</div>
+                <p class="dim">Download a full snapshot: posts, comments, subs, peer groups, figures, users, and settings.</p>
+                <a class="btn" href="api/admin/export" target="_blank">Download export</a>
+            </div>
+
+            <div class="side-card admin-section">
+                <div class="side-title">Restore</div>
+                <p class="dim">Upload an export file. Restoring <b>replaces all current data</b> with the snapshot.</p>
+                <InputFile OnChange="OnRestoreFile" accept=".json,application/json" />
+                @if (_restoreJson is not null)
+                {
+                    <p class="dim">Loaded <b>@_restoreName</b> (@FormatSize(_restoreJson.Length)). Restoring overwrites everything.</p>
+                }
+                <div class="composer-actions">
+                    <button class="btn danger-btn" @onclick="Restore" disabled="@(_restoreJson is null || _busyData)">
+                        @(_busyData ? "Restoring..." : "Restore snapshot")
+                    </button>
+                </div>
+            </div>
+
+            <div class="side-card admin-section">
+                <div class="side-title">Clear feed</div>
+                <p class="dim">Deletes every post and comment. Subs, groups, figures, users, and settings are kept.</p>
+                <button class="btn danger-btn" @onclick="ClearFeed" disabled="@_busyData">
+                    @(_confirmClear ? "Click again to confirm" : "Clear feed")
+                </button>
+            </div>
+        }
     }
 </div>
 
 @code {
     private static readonly (string key, string label)[] _tabs =
-        { ("subs", "Subs"), ("cast", "Groups & Figures"), ("mod", "Moderation"), ("ai", "AI Feed") };
+        { ("subs", "Subs"), ("cast", "Groups & Figures"), ("mod", "Moderation"), ("ai", "AI Feed"), ("data", "Data") };
     private static readonly AiProvider[] _providers =
         { AiProvider.Claude, AiProvider.OpenAI, AiProvider.Grok, AiProvider.HuggingFace };
 
@@ -281,6 +312,8 @@
     private string? _banUserId, _banReason;
     private string _seedFigure = "", _seedSub = "allofhistory";
     private bool _seeding;
+    private string? _restoreJson, _restoreName;
+    private bool _busyData, _confirmClear;
 
     protected override async Task OnInitializedAsync()
     {
@@ -429,6 +462,57 @@
         _status = res.IsSuccessStatusCode ? "Settings saved." : "Save failed.";
         _stats = await Api.AdminGetStatsAsync();
     }
+
+    // --- Data tab ---
+    private async Task OnRestoreFile(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            using var stream = e.File.OpenReadStream(maxAllowedSize: 100 * 1024 * 1024);
+            using var reader = new StreamReader(stream);
+            _restoreJson = await reader.ReadToEndAsync();
+            _restoreName = e.File.Name;
+            _status = "";
+        }
+        catch (Exception ex) { _status = $"Couldn't read the file: {ex.Message}"; }
+    }
+
+    private async Task Restore()
+    {
+        if (_restoreJson is null) return;
+        _busyData = true;
+        _status = "";
+        var res = await Api.AdminRestoreAsync(_restoreJson);
+        _status = res.IsSuccessStatusCode ? "Snapshot restored." : "Restore failed - is this a valid export file?";
+        if (res.IsSuccessStatusCode) { _restoreJson = _restoreName = null; await LoadAll(); }
+        _busyData = false;
+    }
+
+    private async Task ClearFeed()
+    {
+        if (!_confirmClear)
+        {
+            _confirmClear = true;
+            _ = ResetConfirmSoon();
+            return;
+        }
+        _confirmClear = false;
+        _busyData = true;
+        var res = await Api.AdminClearFeedAsync();
+        _status = res.IsSuccessStatusCode ? "Feed cleared." : "Clear failed.";
+        _recent = await Api.GetFeedAsync("new", 15);
+        _stats = await Api.AdminGetStatsAsync();
+        _busyData = false;
+    }
+
+    private async Task ResetConfirmSoon()
+    {
+        await Task.Delay(4000);
+        if (_confirmClear) { _confirmClear = false; await InvokeAsync(StateHasChanged); }
+    }
+
+    private static string FormatSize(int chars)
+        => chars < 1024 ? $"{chars} B" : chars < 1024 * 1024 ? $"{chars / 1024} KB" : $"{chars / (1024.0 * 1024):0.0} MB";
 
     private async Task Seed()
     {
