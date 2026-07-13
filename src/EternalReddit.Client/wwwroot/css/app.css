@@ -345,6 +345,20 @@ a.btn { display: inline-block; text-decoration: none; text-align: center; }
 }
 .linklike:hover { text-decoration: underline; }
 
+/* ---- readability: larger type everywhere (everything is rem-based) ---- */
+html { font-size: 17px; }
+@media (max-width: 820px) { html { font-size: 18px; } }
+.pmeta, .cmeta, .tc-meta, .pc-meta { font-size: 0.8rem; }
+.ptext { font-size: 1rem; line-height: 1.5; }
+.ctext { font-size: 0.95rem; line-height: 1.45; }
+.tc-body, .pc-body { font-size: 0.93rem; }
+.pactions { font-size: 0.83rem; }
+.poster, .admin-row { font-size: 0.9rem; }
+.badge, .achievement { font-size: 0.66rem; }
+.subbadge { font-size: 0.76rem; }
+.model-chip { font-size: 0.72rem; }
+.navlink, .sort-tab { font-size: 0.85rem; }
+
 /* second row on each admin sub: the models in use */
 .admin-row-block { display: block; }
 .admin-row-main { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
