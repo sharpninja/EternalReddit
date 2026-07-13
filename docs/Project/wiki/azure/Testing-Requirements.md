@@ -1,5 +1,13 @@
 # Testing Requirements (MCP Server)
 
+## TEST-DATA
+
+### TEST-DATA-001
+
+Covers LiteDB round-trips for all entities, seeding idempotence and fill-only-empty behavior, purge exemptions (human and scripted content), concurrency on a real LiteDB file (no lost updates), and export/restore round-trip including version rejection. Part of the 151-test green suite.
+
+
+
 ## TEST-DEPLOY
 
 ### TEST-DEPLOY-001
@@ -13,6 +21,14 @@ Deploy scripts are validated by PowerShell 5.1 parser checks, an Octopus layout 
 ### TEST-GATEWAY-001
 
 xUnit suite (24 tests, serialized assembly) covering GatewayMapper route/cluster mapping and prefix/upstream validation, LiteDbRouteStore seeding (idempotent, fill-only-empty), and WAF endpoints - landing lists networks, health anonymous, route API 401, admin redirects to login, configured prefix proxies (502 with no upstream), unknown prefix 404, login without Google config 503.
+
+
+
+## TEST-PERSONA
+
+### TEST-PERSONA-001
+
+Covers group-scoped figure picks with fallback so feeds never dead-end, approval and Enabled semantics, persona threading into provider prompts with per-sub model overrides, and the Columbus scripted-gag durability under concurrent writes.
 
 
 

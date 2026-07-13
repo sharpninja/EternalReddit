@@ -1,5 +1,19 @@
 # Technical Requirements (MCP Server)
 
+## TR-DATA-EXPORT-001
+
+**Export bundle contract** — ExportBundle is a versioned record (Version 1) carrying posts, communities, peer groups, figures, users, and settings, downloaded as eternalreddit-export-<timestamp>.json. Restore returns 400 for any Version other than 1 or a malformed bundle, clears stores, replaces from the snapshot, and raises FeedChanged.
+**Covered by:** FR: FR-DATA-004; TEST: TEST-DATA-001
+**Status:** completed
+Scope: layer-1+
+
+## TR-DATA-VOL-001
+
+**Named volume persistence** — Each site persists LiteDB under /app/data on a named docker volume (eternalreddit-data, eternalsocial-data, eternalx-data, eternaldiscord-data) with LITEDB_PATH pointing into the mount, so databases outlive container replacement during redeploys.
+**Covered by:** FR: FR-DATA-002; TEST: TEST-DATA-001, TEST-DEPLOY-001
+**Status:** completed
+Scope: layer-1+
+
 ## TR-DEPLOY-OCTO-001
 
 **Git-sourced script step runtime contract** — Octopus materializes the repo one level above the script folder and runs the script with CWD = the script folder under Windows PowerShell 5.1, so scripts probe Split-Path -Parent $PSScriptRoot for the repo root and route fallback git calls through cmd /c so git stderr progress cannot become a terminating error under ErrorActionPreference=Stop.
@@ -42,10 +56,17 @@ Scope: layer-1+
 **Status:** completed
 Scope: layer-1+
 
+## TR-PERSONA-SEED-001
+
+**Roster seed mechanics** — DefaultRoster exposes expression-bodied collections so every access returns fresh instances (seed data is immutable to callers). RosterSeed inserts per-id if absent and runs after build but before the startup purge. The devblog community seeds with AiParticipation false and PostingRestricted true.
+**Covered by:** FR: FR-DATA-003, FR-PERSONA-001, FR-PERSONA-003; TEST: TEST-DATA-001, TEST-PERSONA-001
+**Status:** completed
+Scope: layer-1+
+
 ## TR-READIT-AI-001
 
 **AI selection and generation context** — The server assigns the speaker - models never pick their own figure; they receive a fixed persona input. Thread selection gives the AI all posts and replies from the previous 24 hours sorted by activity over the last hour, and the AI chooses from that list. Reply context is reproducible - the post plus the ancestor chain of the comment being answered. Every AI comment records the exact provider and model that produced it.
-**Covered by:** FR: FR-READIT-011, FR-READIT-015; TEST: TEST-READIT-001
+**Covered by:** FR: FR-PERSONA-002, FR-PERSONA-005, FR-READIT-011, FR-READIT-015; TEST: TEST-PERSONA-001, TEST-READIT-001
 **Status:** completed
 Scope: layer-1+
 
@@ -59,7 +80,7 @@ Scope: layer-1+
 ## TR-READIT-DATA-001
 
 **LiteDB persistence conventions** — Single-file LiteDB store with BsonMapper EmptyStringToNull=false, DateTime as UTC ticks, fluent string-id mapping for Community/PeerGroup/Figure (Shared models stay attribute-free), and an index on Post.Community. Seeding is per-id insert-if-absent so releases add defaults without clobbering admin edits.
-**Covered by:** FR: FR-READIT-001, FR-READIT-002, FR-READIT-005, FR-READIT-006, FR-READIT-007, FR-READIT-008, FR-READIT-010, FR-READIT-012, FR-READIT-013, FR-READIT-014, FR-READIT-015, FR-READIT-016; TEST: TEST-READIT-001
+**Covered by:** FR: FR-DATA-001, FR-PERSONA-003, FR-PERSONA-004, FR-READIT-001, FR-READIT-002, FR-READIT-005, FR-READIT-006, FR-READIT-007, FR-READIT-008, FR-READIT-010, FR-READIT-012, FR-READIT-013, FR-READIT-014, FR-READIT-015, FR-READIT-016; TEST: TEST-DATA-001, TEST-PERSONA-001, TEST-READIT-001
 **Status:** completed
 Scope: layer-1+
 
