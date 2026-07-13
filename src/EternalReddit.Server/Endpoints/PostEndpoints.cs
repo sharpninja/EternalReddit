@@ -77,6 +77,10 @@ public static class PostEndpoints
             return Results.Ok(new { shareCount = count, url });
         }).RequireAuthorization();
 
+        // --- Anonymous read: the communities (for the sub switcher / composer picker) ---
+        app.MapGet("/api/communities", (ICommunityStore store) =>
+            Results.Ok(store.GetAll().Where(c => c.Enabled).OrderBy(c => c.Name).ToList()));
+
         // --- Anonymous read: figure leaderboard by comment karma ---
         app.MapGet("/api/top-posters", (IPostService svc, int? count) =>
             Results.Ok(svc.GetTopPosters(count is > 0 ? count.Value : 10)));

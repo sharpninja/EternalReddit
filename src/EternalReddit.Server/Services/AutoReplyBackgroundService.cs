@@ -23,6 +23,7 @@ public sealed class AutoReplyBackgroundService : BackgroundService
     private readonly IPostService _service;
     private readonly IReplyGenerator _generator;
     private readonly IFeedNotifier _notifier;
+    private readonly ISettingsStore _settings;
     private readonly ILogger<AutoReplyBackgroundService> _log;
     private readonly RoundRobinSelector? _rotation;
 
@@ -31,12 +32,14 @@ public sealed class AutoReplyBackgroundService : BackgroundService
         IPostService service,
         IReplyGenerator generator,
         IFeedNotifier notifier,
+        ISettingsStore settings,
         ILogger<AutoReplyBackgroundService> log)
     {
         _posts = posts;
         _service = service;
         _generator = generator;
         _notifier = notifier;
+        _settings = settings;
         _log = log;
         _rotation = generator.Available.Count > 0 ? new RoundRobinSelector(generator.Available) : null;
     }
@@ -69,6 +72,8 @@ public sealed class AutoReplyBackgroundService : BackgroundService
 
     private async Task TickAsync(CancellationToken ct)
     {
+        if (!AiFeedControl.ShouldAutoReply(_settings.Get())) return; // admin-paused
+
         var now = DateTime.UtcNow;
         var since = now - Window;
 

@@ -18,6 +18,7 @@ public sealed class CharacterPostBackgroundService : BackgroundService
     private readonly IReplyGenerator _generator;
     private readonly ICommunityStore _communities;
     private readonly IRosterService _roster;
+    private readonly ISettingsStore _settings;
     private readonly ILogger<CharacterPostBackgroundService> _log;
     private readonly RoundRobinSelector? _rotation;
 
@@ -27,6 +28,7 @@ public sealed class CharacterPostBackgroundService : BackgroundService
         IReplyGenerator generator,
         ICommunityStore communities,
         IRosterService roster,
+        ISettingsStore settings,
         ILogger<CharacterPostBackgroundService> log)
     {
         _posts = posts;
@@ -34,6 +36,7 @@ public sealed class CharacterPostBackgroundService : BackgroundService
         _generator = generator;
         _communities = communities;
         _roster = roster;
+        _settings = settings;
         _log = log;
         _rotation = generator.Available.Count > 0 ? new RoundRobinSelector(generator.Available) : null;
     }
@@ -66,6 +69,8 @@ public sealed class CharacterPostBackgroundService : BackgroundService
 
     private async Task TickAsync(CancellationToken ct)
     {
+        if (!AiFeedControl.ShouldAutoPost(_settings.Get())) return; // admin-paused
+
         var latest = _posts.GetRecent(1).FirstOrDefault();
         if (latest is not null && DateTime.UtcNow - latest.CreatedUtc < Quiet) return;
 

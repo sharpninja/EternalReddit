@@ -218,6 +218,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapPostEndpoints();
+app.MapAdminEndpoints();
 app.MapHub<FeedHub>("/hubs/feed");
 app.MapHealthChecks("/health");
 

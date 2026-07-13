@@ -54,6 +54,11 @@ public interface IPostService
 
     /// <summary>Remove any comments whose figure isn't in the approved cast; returns how many were purged.</summary>
     int PurgeUnapproved();
+
+    // --- Admin moderation ---
+    bool DeletePost(Guid id);
+    bool DeleteReply(Guid postId, Guid replyId);
+    bool SetBanned(string userId, string name, bool banned, string? reason);
 }
 
 public sealed class PostService : IPostService
@@ -416,6 +421,47 @@ public sealed class PostService : IPostService
             _logger.LogError(ex, "Reply generation via {Provider} failed", provider);
             return null;
         }
+    }
+
+    public bool DeletePost(Guid id)
+    {
+        var existed = _posts.Delete(id);
+        if (existed)
+        {
+            _logger.LogInformation("Admin deleted post {Id}", id);
+            _ = _notifier.FeedChangedAsync();
+        }
+        return existed;
+    }
+
+    public bool DeleteReply(Guid postId, Guid replyId)
+    {
+        var post = _posts.Get(postId);
+        if (post is null) return false;
+        var removed = post.Replies.RemoveAll(r => r.Id == replyId);
+        if (removed == 0) return false;
+
+        // Re-root children of the deleted comment so they stay visible.
+        var ids = post.Replies.Select(r => r.Id).ToHashSet();
+        foreach (var r in post.Replies)
+            if (r.ParentReplyId is { } pid && !ids.Contains(pid)) r.ParentReplyId = null;
+
+        _posts.Update(post);
+        _logger.LogInformation("Admin deleted reply {ReplyId} from post {PostId}", replyId, postId);
+        _ = _notifier.FeedChangedAsync();
+        return true;
+    }
+
+    public bool SetBanned(string userId, string name, bool banned, string? reason)
+    {
+        if (string.IsNullOrWhiteSpace(userId)) return false;
+        var user = _users.Get(userId) ?? new User { Id = userId, DisplayName = name };
+        user.IsBanned = banned;
+        user.BannedUtc = banned ? DateTime.UtcNow : null;
+        user.BanReason = banned ? reason : null;
+        _users.Upsert(user);
+        _logger.LogInformation("Admin {Action} user {UserId}", banned ? "banned" : "unbanned", userId);
+        return true;
     }
 
     // ~55% of replies nest under an existing (non-scripted) comment, else top-level.

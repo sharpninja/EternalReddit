@@ -9,12 +9,14 @@ public interface IPostStore
     Post? Get(Guid id);
     void Add(Post post);
     void Update(Post post);
+    bool Delete(Guid id);
 }
 
 public interface IUserStore
 {
     User? Get(string id);
     void Upsert(User user);
+    IReadOnlyList<User> GetAll();
 }
 
 public interface IModerationLogStore
@@ -40,6 +42,7 @@ public sealed class LiteDbPostStore : IPostStore
     public Post? Get(Guid id) => _posts.FindById(id);
     public void Add(Post post) => _posts.Insert(post);
     public void Update(Post post) => _posts.Update(post);
+    public bool Delete(Guid id) => _posts.Delete(id);
 }
 
 public sealed class LiteDbUserStore : IUserStore
@@ -50,6 +53,7 @@ public sealed class LiteDbUserStore : IUserStore
 
     public User? Get(string id) => _users.FindById(id);
     public void Upsert(User user) => _users.Upsert(user);
+    public IReadOnlyList<User> GetAll() => _users.FindAll().ToList();
 }
 
 public sealed class LiteDbModerationLogStore : IModerationLogStore
