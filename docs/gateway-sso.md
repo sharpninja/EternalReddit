@@ -51,3 +51,11 @@ deploy process already does this).
   never accept the headers without the key match.
 - The gateway's admin surface (`/admin`, `/_gateway/*`) is restricted to the owner's
   Google account (`Authorization__AdminEmail`).
+
+## Deployment triggers
+
+Each repo deploys independently: an Octopus Git trigger on each project polls
+its GitHub repo and, on a push to main, creates a release that auto-deploys to
+Development (lifecycle). The stable GATEWAY_KEY lives in the EternalSocial
+library variable set, so sites can restart at different times without breaking
+SSO. Deploy scripts live in each repo at deploy/octopus-deploy.ps1.
