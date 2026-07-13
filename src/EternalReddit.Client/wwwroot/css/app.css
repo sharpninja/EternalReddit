@@ -249,6 +249,19 @@ table.logs tr:first-child td { border-top: none; }
 }
 .linklike:hover { text-decoration: underline; }
 
+/* second row on each admin sub: the models in use */
+.admin-row-block { display: block; }
+.admin-row-main { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.admin-models { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 3px; }
+.model-chip {
+    display: inline-block; font-size: 0.68rem; font-weight: 600;
+    border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px;
+}
+.badge-claude-outline { border-color: var(--claude); color: #c96a1e; }
+.badge-grok-outline { border-color: var(--grok); color: #4a6fd8; }
+.badge-openai-outline { border-color: var(--openai); color: #2b8a44; }
+.badge-huggingface-outline { border-color: var(--huggingface); color: #9a7b00; }
+
 /* ---- profile + clickable names ---- */
 .profile-head { margin-bottom: 14px; }
 .profile-name { margin: 0; font-size: 1.3rem; }

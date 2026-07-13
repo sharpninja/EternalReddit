@@ -32,14 +32,29 @@
                 <div class="side-sub dim">Click a sub to edit it - groups, and the model each agent uses there.</div>
                 @foreach (var c in _subs)
                 {
-                    <div class="admin-row">
-                        <button class="admin-name linklike" @onclick="() => EditSub(c)">r/@c.Slug</button>
-                        <span class="dim">@c.Name · @(c.GroupIds.Count == 0 ? "open to all" : string.Join(", ", c.GroupIds))@(c.Enabled ? "" : " · disabled")@(c.Models.Count > 0 ? $" · {c.Models.Count} model override(s)" : "")</span>
-                        <button class="link" @onclick="() => EditSub(c)">Edit</button>
-                        @if (c.Slug != "allofhistory")
-                        {
-                            <button class="link danger" @onclick="() => DeleteSub(c.Slug)">Delete</button>
-                        }
+                    <div class="admin-row admin-row-block">
+                        <div class="admin-row-main">
+                            <button class="admin-name linklike" @onclick="() => EditSub(c)">r/@c.Slug</button>
+                            <span class="dim">@c.Name · @(c.GroupIds.Count == 0 ? "open to all" : string.Join(", ", c.GroupIds))@(c.Enabled ? "" : " · disabled")</span>
+                            <button class="link" @onclick="() => EditSub(c)">Edit</button>
+                            @if (c.Slug != "allofhistory")
+                            {
+                                <button class="link danger" @onclick="() => DeleteSub(c.Slug)">Delete</button>
+                            }
+                        </div>
+                        <div class="admin-models">
+                            @if (c.Models.Count == 0)
+                            {
+                                <span class="model-chip dim">all agents on provider defaults</span>
+                            }
+                            else
+                            {
+                                @foreach (var m in c.Models)
+                                {
+                                    <span class="model-chip badge-@m.Provider.ToString().ToLowerInvariant()-outline">@m.Provider · @m.ModelId</span>
+                                }
+                            }
+                        </div>
                     </div>
                 }
                 <div class="admin-new">
