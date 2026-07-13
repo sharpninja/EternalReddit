@@ -1,18 +1,13 @@
-# EternalSocial core deploy: the gateway, EternalReadit, and the ngrok tunnel.
-# Run by Octopus as a git-sourced script step; a push to this repo triggers it.
-# EternalX and EternalDiscord deploy from their own repos' scripts and are NOT
-# restarted here - the stable GATEWAY_KEY (EternalSocial library set) keeps SSO
-# consistent across independent deploys.
+# EternalReadit deploy: builds and runs the site container behind the EternalSocial
+# gateway at /r. Run by Octopus as a git-sourced script step; a push to this repo
+# triggers it. The gateway and ngrok tunnel deploy from the EternalSocial repo; the
+# stable GATEWAY_KEY (EternalSocial library set) keeps SSO consistent across
+# independent deploys.
 $ErrorActionPreference = 'Stop'
 
 $image = 'eternalreddit:latest'
-$proxyImage = 'eternalsocial-proxy:latest'
 $container = 'eternalreddit'
-$proxy = 'eternalsocial-proxy'
-$ngrok = 'eternalreddit-ngrok'
 $network = 'eternal'
-$hostPort = 8090
-$domain = 'eternalsocial.ngrok.app'
 $sub = [string][char]114 + [char]109
 
 function TeardownContainer($name) {
@@ -26,15 +21,17 @@ function TeardownContainer($name) {
     }
 }
 
-function Resolve-Source($repoUrl, $workLeaf) {
-    # Git-sourced steps extract the repo one level ABOVE this script's folder and run
-    # the script with CWD = the script's folder, so probe $PSScriptRoot's parent first.
-    $root = Split-Path -Parent $PSScriptRoot
-    if ($root -and (Test-Path (Join-Path $root 'Dockerfile'))) { return $root }
-    if (Test-Path (Join-Path $PWD 'Dockerfile')) { return "$PWD" }
+$gatewayKey = $OctopusParameters['GATEWAY_KEY']
+if (-not $gatewayKey) { throw 'GATEWAY_KEY variable is not set (EternalSocial library set).' }
+
+# Git-sourced steps extract the repo one level ABOVE this script's folder and run the
+# script with CWD = the script's folder, so probe $PSScriptRoot's parent, then $PWD.
+$src = Split-Path -Parent $PSScriptRoot
+if (-not ($src -and (Test-Path (Join-Path $src 'Dockerfile')))) { $src = "$PWD" }
+if (-not (Test-Path (Join-Path $src 'Dockerfile'))) {
     # Ad-hoc fallback: clone/refresh a working copy. git writes progress to stderr;
     # cmd /c merges the streams outside PowerShell so EAP=Stop cannot treat it as fatal.
-    $work = Join-Path $env:ProgramData $workLeaf
+    $work = Join-Path $env:ProgramData 'EternalReddit\src'
     New-Item -ItemType Directory -Force (Split-Path $work) | Out-Null
     if (Test-Path (Join-Path $work '.git')) {
         cmd /c "git -C ""$work"" fetch --all --prune 2>&1" | Write-Host
@@ -42,20 +39,14 @@ function Resolve-Source($repoUrl, $workLeaf) {
         cmd /c "git -C ""$work"" reset --hard origin/main 2>&1" | Write-Host
         if ($LASTEXITCODE -ne 0) { throw "git reset failed with exit code $LASTEXITCODE" }
     } else {
-        cmd /c "git clone --branch main --depth 1 $repoUrl ""$work"" 2>&1" | Write-Host
+        cmd /c "git clone --branch main --depth 1 https://github.com/sharpninja/EternalReddit.git ""$work"" 2>&1" | Write-Host
         if ($LASTEXITCODE -ne 0) { throw "git clone failed with exit code $LASTEXITCODE" }
     }
-    return $work
+    $src = $work
 }
 
-$gatewayKey = $OctopusParameters['GATEWAY_KEY']
-if (-not $gatewayKey) { throw 'GATEWAY_KEY variable is not set (EternalSocial library set).' }
-
-$src = Resolve-Source 'https://github.com/sharpninja/EternalReddit.git' 'EternalReddit\src'
 docker build -t $image "$src"
 if ($LASTEXITCODE -ne 0) { throw "docker build (app) failed with exit code $LASTEXITCODE" }
-docker build -t $proxyImage -f (Join-Path $src 'src\EternalSocial.Proxy\Dockerfile') "$src"
-if ($LASTEXITCODE -ne 0) { throw "docker build (gateway) failed with exit code $LASTEXITCODE" }
 
 if (-not (docker network ls -q --filter "name=^$network$")) {
     docker network create $network | Out-Null
@@ -63,10 +54,7 @@ if (-not (docker network ls -q --filter "name=^$network$")) {
 }
 
 $envFile = Join-Path $env:TEMP 'eternalreddit.env'
-$names = @('ANTHROPIC_API_KEY','OPENAI_API_KEY','XAI_API_KEY','HF_API_KEY','NGROK_AUTHTOKEN',
-    'Authentication__Google__ClientId','Authentication__Google__ClientSecret',
-    'Authentication__Microsoft__ClientId','Authentication__Microsoft__ClientSecret',
-    'Authentication__GitHub__ClientId','Authentication__GitHub__ClientSecret')
+$names = @('ANTHROPIC_API_KEY','OPENAI_API_KEY','XAI_API_KEY','HF_API_KEY')
 $lines = foreach ($n in $names) { $v = $OctopusParameters[$n]; if ($v) { "$n=$v" } }
 $lines = @($lines) + "GATEWAY_KEY=$gatewayKey"
 [System.IO.File]::WriteAllLines($envFile, [string[]]$lines)
@@ -75,21 +63,8 @@ try {
     TeardownContainer $container
     docker run -d --name $container --restart unless-stopped --network $network -v eternalreddit-data:/app/data -e ASPNETCORE_ENVIRONMENT=Production -e PATH_BASE=/r --env-file $envFile $image
     if ($LASTEXITCODE -ne 0) { throw "docker run (app) failed with exit code $LASTEXITCODE" }
-
-    TeardownContainer $proxy
-    docker run -d --name $proxy --restart unless-stopped --network $network -p ${hostPort}:8080 -v eternalsocial-data:/app/data -e ASPNETCORE_ENVIRONMENT=Production --env-file $envFile $proxyImage
-    if ($LASTEXITCODE -ne 0) { throw "docker run (gateway) failed with exit code $LASTEXITCODE" }
 } finally {
     try { [System.IO.File]::Delete($envFile) } catch { }
 }
 
-$ngrokToken = $OctopusParameters['NGROK_AUTHTOKEN']
-if (-not $ngrokToken) { $ngrokToken = $env:NGROK_AUTHTOKEN }
-TeardownContainer $ngrok
-if ($ngrokToken) {
-    docker run -d --name $ngrok --restart unless-stopped --add-host=host.docker.internal:host-gateway -e NGROK_AUTHTOKEN=$ngrokToken ngrok/ngrok:latest http --domain=$domain host.docker.internal:$hostPort
-    if ($LASTEXITCODE -ne 0) { throw "docker run (ngrok) failed with exit code $LASTEXITCODE" }
-} else {
-    Write-Host 'WARNING: no ngrok token found; tunnel NOT started.'
-}
-Write-Host "EternalSocial core deployed: gateway on :$hostPort, EternalReadit at /r; ngrok -> https://$domain/"
+Write-Host 'EternalReadit deployed behind the gateway at /r.'
