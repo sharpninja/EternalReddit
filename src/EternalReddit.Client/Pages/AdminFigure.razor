@@ -1,0 +1,122 @@
+@page "/admin/figures/{Name}"
+@inject EternalRedditApi Api
+@inject NavigationManager Nav
+
+<PageTitle>@Name - Admin - EternalReadit</PageTitle>
+
+<div class="postpage">
+    <a class="link back" href="admin?tab=cast">&larr; Admin</a>
+
+    @if (_loading)
+    {
+        <p class="dim center">Loading...</p>
+    }
+    else if (_me is not { IsAdmin: true })
+    {
+        <p class="dim center">You are not authorized to view this page.</p>
+    }
+    else
+    {
+        <h2 class="logs-title">@(_isNew ? "New figure:" : "Edit") @_figure.Name</h2>
+        <p class="dim">@_status</p>
+
+        <div class="side-card admin-section">
+            <div class="side-sub dim">Persona - the profile the AI writes in-voice</div>
+            <textarea class="body-input persona-input" placeholder="e.g. Athenian philosopher; idealistic and systematic..." @bind="_figure.Persona"></textarea>
+            <label class="admin-check"><input type="checkbox" @bind="_figure.Enabled" /> Enabled (eligible for new AI picks)</label>
+
+            <div class="side-sub dim">Peer groups</div>
+            <div class="admin-checks">
+                @foreach (var g in _groups)
+                {
+                    <label class="admin-check">
+                        <input type="checkbox" checked="@_figure.GroupIds.Contains(g.Slug)"
+                               @onchange="e => Toggle(g.Slug, e)" /> @g.Name
+                    </label>
+                }
+            </div>
+
+            <div class="composer-actions">
+                <button class="btn" @onclick="Save" disabled="@_busy">Save</button>
+                @if (!_isNew)
+                {
+                    <button class="btn danger-btn" @onclick="Delete" disabled="@_busy">
+                        @(_confirmDelete ? "Click again to confirm" : "Delete figure")
+                    </button>
+                }
+            </div>
+            @if (!_isNew)
+            {
+                <p class="dim">Deleting a figure also purges its past comments on the next restart. Uncheck Enabled instead to bench it and keep history.</p>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Name { get; set; } = "";
+
+    private MeInfo? _me;
+    private Figure _figure = new();
+    private List<PeerGroup> _groups = new();
+    private bool _loading = true;
+    private bool _isNew;
+    private bool _busy, _confirmDelete;
+    private string _status = "";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+        try { _me = await Api.GetMeAsync(); } catch { }
+        if (_me is { IsAdmin: true })
+        {
+            try
+            {
+                _groups = await Api.AdminGetPeerGroupsAsync();
+                var existing = (await Api.AdminGetFiguresAsync()).FirstOrDefault(f => f.Name == Name);
+                _isNew = existing is null;
+                _figure = existing ?? new Figure { Name = Name.Trim(), Enabled = true };
+            }
+            catch { _status = "Couldn't load the figure."; }
+        }
+        _loading = false;
+    }
+
+    private void Toggle(string slug, ChangeEventArgs e)
+    {
+        var on = e.Value is bool b && b;
+        if (on && !_figure.GroupIds.Contains(slug)) _figure.GroupIds.Add(slug);
+        if (!on) _figure.GroupIds.Remove(slug);
+    }
+
+    private async Task Save()
+    {
+        if (string.IsNullOrWhiteSpace(_figure.Persona)) { _status = "Persona is required."; return; }
+        _busy = true;
+        var res = await Api.AdminSaveFigureAsync(_figure);
+        _status = res.IsSuccessStatusCode ? "Saved." : "Save failed.";
+        if (res.IsSuccessStatusCode) _isNew = false;
+        _busy = false;
+    }
+
+    private async Task Delete()
+    {
+        if (!_confirmDelete)
+        {
+            _confirmDelete = true;
+            _ = ResetConfirmSoon();
+            return;
+        }
+        _busy = true;
+        var res = await Api.AdminDeleteFigureAsync(_figure.Name);
+        if (res.IsSuccessStatusCode) { Nav.NavigateTo("admin?tab=cast"); return; }
+        _status = "Delete failed.";
+        _busy = false;
+    }
+
+    private async Task ResetConfirmSoon()
+    {
+        await Task.Delay(4000);
+        if (_confirmDelete) { _confirmDelete = false; await InvokeAsync(StateHasChanged); }
+    }
+}

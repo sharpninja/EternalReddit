@@ -337,6 +337,7 @@ table.logs tr:first-child td { border-top: none; }
 .admin-stats { display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.85rem; }
 .link.danger:hover { color: #e5484d; }
 a.btn { display: inline-block; text-decoration: none; text-align: center; }
+.persona-input { min-height: 110px; }
 .danger-btn { background: #c73438; }
 .danger-btn:hover { background: #e5484d; }
 .linklike {

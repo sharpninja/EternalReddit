@@ -1,5 +1,6 @@
 @page "/admin"
 @inject EternalRedditApi Api
+@inject NavigationManager Nav
 
 <PageTitle>Admin - EternalReadit</PageTitle>
 
@@ -29,18 +30,14 @@
         {
             <div class="side-card admin-section">
                 <div class="side-title">Communities</div>
-                <div class="side-sub dim">Click a sub to edit it - groups, and the model each agent uses there.</div>
+                <div class="side-sub dim">Click a sub to open its page - groups, and the model each agent uses there.</div>
                 @foreach (var c in _subs)
                 {
                     <div class="admin-row admin-row-block">
                         <div class="admin-row-main">
-                            <button class="admin-name linklike" @onclick="() => EditSub(c)">r/@c.Slug</button>
+                            <a class="admin-name linklike" href="@($"admin/subs/{c.Slug}")">r/@c.Slug</a>
                             <span class="dim">@c.Name · @(c.GroupIds.Count == 0 ? "open to all" : string.Join(", ", c.GroupIds))@(c.Enabled ? "" : " · disabled")</span>
-                            <button class="link" @onclick="() => EditSub(c)">Edit</button>
-                            @if (c.Slug != "allofhistory")
-                            {
-                                <button class="link danger" @onclick="() => DeleteSub(c.Slug)">Delete</button>
-                            }
+                            <a class="link" href="@($"admin/subs/{c.Slug}")">Edit</a>
                         </div>
                         <div class="admin-models">
                             @if (c.Models.Count == 0)
@@ -59,47 +56,9 @@
                 }
                 <div class="admin-new">
                     <input class="title-input" placeholder="new-slug" @bind="_newSubSlug" />
-                    <input class="title-input" placeholder="Display Name" @bind="_newSubName" />
                     <button class="btn" @onclick="NewSub">Add sub</button>
                 </div>
             </div>
-
-            @if (_editSub is not null)
-            {
-                <div class="side-card admin-section">
-                    <div class="side-title">Edit r/@_editSub.Slug</div>
-                    <input class="title-input" placeholder="Display name" @bind="_editSub.Name" />
-                    <input class="title-input" placeholder="Description" @bind="_editSub.Description" />
-                    <label class="admin-check"><input type="checkbox" @bind="_editSub.Enabled" /> Enabled</label>
-
-                    <div class="side-sub dim">Peer groups (none checked = open to every figure)</div>
-                    <div class="admin-checks">
-                        @foreach (var g in _groups)
-                        {
-                            <label class="admin-check">
-                                <input type="checkbox" checked="@_editSub.GroupIds.Contains(g.Slug)"
-                                       @onchange="e => ToggleList(_editSub.GroupIds, g.Slug, e)" /> @g.Name
-                            </label>
-                        }
-                    </div>
-
-                    <div class="side-sub dim">Model per agent in this sub (blank = provider default)</div>
-                    @foreach (var p in _providers)
-                    {
-                        <div class="admin-model-row">
-                            <span class="admin-name">@p</span>
-                            <input class="title-input" placeholder="model id"
-                                   value="@ModelOf(_editSub, p)"
-                                   @onchange="e => SetModel(_editSub, p, e.Value?.ToString())" />
-                        </div>
-                    }
-
-                    <div class="composer-actions">
-                        <button class="btn" @onclick="SaveSub">Save</button>
-                        <button class="link" @onclick="() => _editSub = null">Close</button>
-                    </div>
-                </div>
-            }
         }
         else if (_tab == "cast")
         {
@@ -122,13 +81,13 @@
 
             <div class="side-card admin-section">
                 <div class="side-title">Figures (@_figures.Count)</div>
+                <div class="side-sub dim">Click a figure to open its page - persona and peer groups.</div>
                 @foreach (var f in _figures.OrderBy(f => f.Name))
                 {
                     <div class="admin-row">
-                        <button class="admin-name linklike" @onclick="() => EditFigure(f)">@f.Name</button>
+                        <a class="admin-name linklike" href="@($"admin/figures/{Uri.EscapeDataString(f.Name)}")">@f.Name</a>
                         <span class="dim">@(string.Join(", ", f.GroupIds))@(f.Enabled ? "" : " · benched")</span>
-                        <button class="link" @onclick="() => EditFigure(f)">Edit</button>
-                        <button class="link danger" @onclick="() => DeleteFigure(f.Name)">Delete</button>
+                        <a class="link" href="@($"admin/figures/{Uri.EscapeDataString(f.Name)}")">Edit</a>
                     </div>
                 }
                 <div class="admin-new">
@@ -136,29 +95,6 @@
                     <button class="btn" @onclick="NewFigure">Add figure</button>
                 </div>
             </div>
-
-            @if (_editFigure is not null)
-            {
-                <div class="side-card admin-section">
-                    <div class="side-title">Edit @_editFigure.Name</div>
-                    <textarea class="body-input" placeholder="Persona (how the AI writes in-voice)" @bind="_editFigure.Persona"></textarea>
-                    <label class="admin-check"><input type="checkbox" @bind="_editFigure.Enabled" /> Enabled (eligible for new AI picks)</label>
-                    <div class="side-sub dim">Peer groups</div>
-                    <div class="admin-checks">
-                        @foreach (var g in _groups)
-                        {
-                            <label class="admin-check">
-                                <input type="checkbox" checked="@_editFigure.GroupIds.Contains(g.Slug)"
-                                       @onchange="e => ToggleList(_editFigure.GroupIds, g.Slug, e)" /> @g.Name
-                            </label>
-                        }
-                    </div>
-                    <div class="composer-actions">
-                        <button class="btn" @onclick="SaveFigure">Save</button>
-                        <button class="link" @onclick="() => _editFigure = null">Close</button>
-                    </div>
-                </div>
-            }
         }
         else if (_tab == "mod")
         {
@@ -289,8 +225,9 @@
 @code {
     private static readonly (string key, string label)[] _tabs =
         { ("subs", "Subs"), ("cast", "Groups & Figures"), ("mod", "Moderation"), ("ai", "AI Feed"), ("data", "Data") };
-    private static readonly AiProvider[] _providers =
-        { AiProvider.Claude, AiProvider.OpenAI, AiProvider.Grok, AiProvider.HuggingFace };
+
+    /// <summary>Deep-link a tab: /admin?tab=cast (used by the detail pages' back links).</summary>
+    [SupplyParameterFromQuery(Name = "tab")] public string? TabQuery { get; set; }
 
     private MeInfo? _me;
     private bool _loading = true;
@@ -306,9 +243,7 @@
     private AppSettings _settings = new();
     private AdminStats? _stats;
 
-    private Community? _editSub;
-    private Figure? _editFigure;
-    private string? _newSubSlug, _newSubName, _newGroupSlug, _newGroupName, _newFigureName;
+    private string? _newSubSlug, _newGroupSlug, _newGroupName, _newFigureName;
     private string? _banUserId, _banReason;
     private string _seedFigure = "", _seedSub = "allofhistory";
     private bool _seeding;
@@ -320,6 +255,11 @@
         try { _me = await Api.GetMeAsync(); } catch { }
         if (_me is { IsAdmin: true }) await LoadAll();
         _loading = false;
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (TabQuery is not null && _tabs.Any(t => t.key == TabQuery)) _tab = TabQuery;
     }
 
     private async Task LoadAll()
@@ -340,52 +280,11 @@
 
     private void SetTab(string tab) { _tab = tab; _status = ""; }
 
-    private static void ToggleList(List<string> list, string slug, ChangeEventArgs e)
+    // --- Subs (details live on /admin/subs/{slug}) ---
+    private void NewSub()
     {
-        var on = e.Value is bool b && b;
-        if (on && !list.Contains(slug)) list.Add(slug);
-        if (!on) list.Remove(slug);
-    }
-
-    // --- Subs ---
-    private void EditSub(Community c) => _editSub = new Community
-    {
-        Slug = c.Slug, Name = c.Name, Description = c.Description, Enabled = c.Enabled,
-        GroupIds = new List<string>(c.GroupIds),
-        Models = c.Models.Select(m => new AgentModel { Provider = m.Provider, ModelId = m.ModelId }).ToList()
-    };
-
-    private static string ModelOf(Community c, AiProvider p) => c.ResolveModel(p) ?? "";
-
-    private static void SetModel(Community c, AiProvider p, string? modelId)
-    {
-        c.Models.RemoveAll(m => m.Provider == p);
-        if (!string.IsNullOrWhiteSpace(modelId))
-            c.Models.Add(new AgentModel { Provider = p, ModelId = modelId.Trim() });
-    }
-
-    private async Task SaveSub()
-    {
-        if (_editSub is null) return;
-        var res = await Api.AdminSaveCommunityAsync(_editSub);
-        _status = res.IsSuccessStatusCode ? $"Saved r/{_editSub.Slug}." : "Save failed.";
-        if (res.IsSuccessStatusCode) { _editSub = null; _subs = await Api.AdminGetCommunitiesAsync(); }
-    }
-
-    private async Task NewSub()
-    {
-        if (string.IsNullOrWhiteSpace(_newSubSlug) || string.IsNullOrWhiteSpace(_newSubName)) { _status = "Slug and name are required."; return; }
-        var slug = _newSubSlug.Trim().ToLowerInvariant();
-        var res = await Api.AdminSaveCommunityAsync(new Community { Slug = slug, Name = _newSubName.Trim() });
-        _status = res.IsSuccessStatusCode ? $"Created r/{slug}." : "Create failed.";
-        if (res.IsSuccessStatusCode) { _newSubSlug = _newSubName = null; _subs = await Api.AdminGetCommunitiesAsync(); }
-    }
-
-    private async Task DeleteSub(string slug)
-    {
-        var res = await Api.AdminDeleteCommunityAsync(slug);
-        _status = res.IsSuccessStatusCode ? $"Deleted r/{slug}." : "Delete failed.";
-        _subs = await Api.AdminGetCommunitiesAsync();
+        if (string.IsNullOrWhiteSpace(_newSubSlug)) { _status = "Slug is required."; return; }
+        Nav.NavigateTo($"admin/subs/{_newSubSlug.Trim().ToLowerInvariant()}");
     }
 
     // --- Cast ---
@@ -404,32 +303,11 @@
         _groups = await Api.AdminGetPeerGroupsAsync();
     }
 
-    private void EditFigure(Figure f) => _editFigure = new Figure
-    {
-        Name = f.Name, Persona = f.Persona, Enabled = f.Enabled, GroupIds = new List<string>(f.GroupIds)
-    };
-
-    private async Task SaveFigure()
-    {
-        if (_editFigure is null) return;
-        if (string.IsNullOrWhiteSpace(_editFigure.Persona)) { _status = "Persona is required."; return; }
-        var res = await Api.AdminSaveFigureAsync(_editFigure);
-        _status = res.IsSuccessStatusCode ? $"Saved {_editFigure.Name}." : "Save failed.";
-        if (res.IsSuccessStatusCode) { _editFigure = null; _figures = await Api.AdminGetFiguresAsync(); }
-    }
-
+    // Figure details live on /admin/figures/{name}.
     private void NewFigure()
     {
         if (string.IsNullOrWhiteSpace(_newFigureName)) { _status = "Name is required."; return; }
-        _editFigure = new Figure { Name = _newFigureName.Trim(), Persona = "" };
-        _newFigureName = null;
-    }
-
-    private async Task DeleteFigure(string name)
-    {
-        var res = await Api.AdminDeleteFigureAsync(name);
-        _status = res.IsSuccessStatusCode ? $"Deleted {name}." : "Delete failed.";
-        _figures = await Api.AdminGetFiguresAsync();
+        Nav.NavigateTo($"admin/figures/{Uri.EscapeDataString(_newFigureName.Trim())}");
     }
 
     // --- Moderation ---
