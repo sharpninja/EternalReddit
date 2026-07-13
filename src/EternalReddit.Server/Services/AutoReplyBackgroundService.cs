@@ -24,6 +24,7 @@ public sealed class AutoReplyBackgroundService : BackgroundService
     private readonly IReplyGenerator _generator;
     private readonly IFeedNotifier _notifier;
     private readonly ISettingsStore _settings;
+    private readonly ICommunityStore _communities;
     private readonly ILogger<AutoReplyBackgroundService> _log;
     private readonly RoundRobinSelector? _rotation;
 
@@ -33,6 +34,7 @@ public sealed class AutoReplyBackgroundService : BackgroundService
         IReplyGenerator generator,
         IFeedNotifier notifier,
         ISettingsStore settings,
+        ICommunityStore communities,
         ILogger<AutoReplyBackgroundService> log)
     {
         _posts = posts;
@@ -40,6 +42,7 @@ public sealed class AutoReplyBackgroundService : BackgroundService
         _generator = generator;
         _notifier = notifier;
         _settings = settings;
+        _communities = communities;
         _log = log;
         _rotation = generator.Available.Count > 0 ? new RoundRobinSelector(generator.Available) : null;
     }
@@ -77,8 +80,12 @@ public sealed class AutoReplyBackgroundService : BackgroundService
         var now = DateTime.UtcNow;
         var since = now - Window;
 
+        // Subs with AI participation off (e.g. the dev blog) are never joined.
+        var noAi = _communities.GetAll().Where(c => !c.AiParticipation).Select(c => c.Slug).ToHashSet();
+
         // The menu: every thread active in the last 24h, sorted by activity in the last hour.
         var candidates = _posts.GetRecent(80)
+            .Where(p => !noAi.Contains(p.Community))
             .Where(p => Active(p, since))
             .Where(p => now - LatestActivity(p) >= QuietFor(p)) // wait out this thread's randomised quiet gap
             .OrderByDescending(p => ActivityLastHour(p, now))

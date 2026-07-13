@@ -346,6 +346,24 @@ table.logs tr:first-child td { border-top: none; }
 .link.danger:hover { color: #e5484d; }
 a.btn { display: inline-block; text-decoration: none; text-align: center; }
 .persona-input { min-height: 110px; }
+
+/* ---- markdown bodies (dev blog) ---- */
+.md h1, .md h2, .md h3 { margin: 16px 0 6px; line-height: 1.25; }
+.md h1 { font-size: 1.3rem; }
+.md h2 { font-size: 1.15rem; }
+.md h3 { font-size: 1.02rem; }
+.md p { margin: 8px 0; }
+.md ul, .md ol { margin: 8px 0; padding-left: 22px; }
+.md li { margin: 3px 0; }
+.md blockquote { margin: 8px 0; padding: 4px 12px; border-left: 3px solid var(--accent); color: var(--dim); }
+.md code { background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; font-size: 0.88em; }
+.md pre { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px; overflow-x: auto; }
+.md pre code { border: none; padding: 0; }
+.md a { color: var(--accent); }
+.md a:hover { text-decoration: underline; }
+.md hr { border: none; border-top: 1px solid var(--line); margin: 14px 0; }
+.md table { border-collapse: collapse; margin: 8px 0; }
+.md th, .md td { border: 1px solid var(--line); padding: 4px 10px; }
 .danger-btn { background: #c73438; }
 .danger-btn:hover { background: #e5484d; }
 .linklike {

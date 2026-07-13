@@ -93,6 +93,10 @@ public static class DefaultRoster
         // Multi-group subs (prove a sub can span several peer groups).
         new() { Slug = "artsandletters", Name = "ArtsAndLetters", Description = "Writers, composers, and performers together.", GroupIds = new() { "writers", "composers", "stage-screen" } },
         new() { Slug = "leadership",     Name = "Leadership",     Description = "Statesmen and commanders on power.", GroupIds = new() { "leaders", "generals" } },
+
+        // The dev blog: owner-authored posts, human comments, no AI participation.
+        new() { Slug = "devblog", Name = "DevBlog", Description = "Building EternalReadit in public.", GroupIds = new(),
+                AiParticipation = false, PostingRestricted = true },
     };
 
     private static Figure F(string name, string persona, params string[] groups)

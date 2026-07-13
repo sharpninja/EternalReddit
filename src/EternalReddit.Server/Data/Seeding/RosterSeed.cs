@@ -8,7 +8,7 @@ namespace EternalReddit.Server.Data.Seeding;
 /// </summary>
 public static class RosterSeed
 {
-    public static void EnsureSeeded(IPeerGroupStore groups, IFigureStore figures, ICommunityStore communities)
+    public static void EnsureSeeded(IPeerGroupStore groups, IFigureStore figures, ICommunityStore communities, IPostStore? posts = null)
     {
         foreach (var g in DefaultRoster.Groups)
             if (groups.Get(g.Slug) is null) groups.Upsert(g);
@@ -18,5 +18,9 @@ public static class RosterSeed
 
         foreach (var c in DefaultRoster.Communities)
             if (communities.Get(c.Slug) is null) communities.Upsert(c);
+
+        // First dev-blog post, once (only when a post store is supplied).
+        if (posts is not null && posts.GetRecent(int.MaxValue).All(p => p.Community != "devblog"))
+            posts.Add(DevBlogSeed.FirstPost());
     }
 }

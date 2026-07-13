@@ -90,7 +90,7 @@ public sealed class CharacterPostBackgroundService : BackgroundService
 
     private Community? PickCommunity()
     {
-        var enabled = _communities.GetAll().Where(c => c.Enabled).ToList();
+        var enabled = _communities.GetAll().Where(c => c.Enabled && c.AiParticipation).ToList();
         return enabled.Count == 0 ? null : enabled[Random.Shared.Next(enabled.Count)];
     }
 }

@@ -1,4 +1,5 @@
 @namespace EternalReddit.Client.Components
+@using Markdig
 @implements IAsyncDisposable
 @inject EternalRedditApi Api
 @inject NavigationManager Nav
@@ -6,12 +7,18 @@
 
 <div class="layout">
     <div class="feed-col">
+        @if (ComposerHidden)
+        {
+            <p class="dim login-hint">Posts here come from the site owner. Jump into the comments!</p>
+        }
+        else
+        {
         <div class="composer">
             <input class="title-input" @bind="_title" placeholder="Title" />
             <textarea class="body-input" @bind="_body" placeholder="Ask history anything..."></textarea>
             <div class="composer-actions">
                 <select class="sub-select" @bind="_composeSub" title="Post to community">
-                    @foreach (var c in _subs)
+                    @foreach (var c in PostableSubs)
                     {
                         <option value="@c.Slug">r/@c.Name</option>
                     }
@@ -20,6 +27,7 @@
                 <button class="btn" @onclick="Submit" disabled="@_posting">@(_posting ? "Posting..." : "Post")</button>
             </div>
         </div>
+        }
 
         <div class="sort-tabs">
             @foreach (var s in _sorts)
@@ -67,7 +75,14 @@
                             }
                             · @Ago(post.CreatedUtc)
                         </div>
-                        <div class="ptext">@post.Body</div>
+                        @if (IsBlog(post))
+                        {
+                            <div class="ptext md">@RenderMd(post.Body)</div>
+                        }
+                        else
+                        {
+                            <div class="ptext">@post.Body</div>
+                        }
 
                         @{ var top = TopComment(post); }
                         @if (top is not null)
@@ -101,8 +116,12 @@
     /// <summary>When set, the feed and the composer are scoped to this sub.</summary>
     [Parameter] public string? Sub { get; set; }
 
+    private static readonly MarkdownPipeline MdPipeline =
+        new MarkdownPipelineBuilder().DisableHtml().UseAdvancedExtensions().Build();
+
     private List<Post> _feed = new();
     private List<Community> _subs = new();
+    private MeInfo? _me;
     private IReadOnlyList<TopPoster> _topPosters = Array.Empty<TopPoster>();
     private string _sort = "hot";
     private string _composeSub = "allofhistory";
@@ -124,6 +143,7 @@
     {
         try { _subs = await Api.GetCommunitiesAsync(); } catch { /* picker falls back to the default */ }
         if (_subs.Count == 0) _subs.Add(new Community { Slug = "allofhistory", Name = "AllOfHistory" });
+        try { _me = await Api.GetMeAsync(); } catch { /* composer gating falls back to server enforcement */ }
 
         _hub = new HubConnectionBuilder()
             .WithUrl(Nav.ToAbsoluteUri("hubs/feed"))
@@ -220,6 +240,21 @@
             StateHasChanged();
         }
     }
+
+    // Blog subs render markdown and only accept posts from the admin.
+    private bool IsBlog(Post p)
+        => _subs.Any(c => c.Slug == p.Community && c.PostingRestricted);
+
+    private bool ComposerHidden
+        => Sub is { Length: > 0 }
+           && _subs.FirstOrDefault(c => c.Slug == Sub) is { PostingRestricted: true }
+           && _me is not { IsAdmin: true };
+
+    private IEnumerable<Community> PostableSubs
+        => _me is { IsAdmin: true } ? _subs : _subs.Where(c => !c.PostingRestricted);
+
+    private MarkupString RenderMd(string body)
+        => (MarkupString)Markdown.ToHtml(body ?? "", MdPipeline);
 
     private static string DisplayAuthor(Reply r)
         => r.Provider == AiProvider.User ? (r.AuthorName ?? "user") : r.Figure;

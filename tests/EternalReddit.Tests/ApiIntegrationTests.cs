@@ -26,11 +26,13 @@ public class ApiIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task Anonymous_can_read_the_empty_feed()
+    public async Task Anonymous_feed_contains_only_the_seeded_devblog_post()
     {
         var res = await _factory.CreateClient().GetAsync("/api/posts");
         res.EnsureSuccessStatusCode();
-        Assert.Equal("[]", await res.Content.ReadAsStringAsync());
+        var posts = await res.Content.ReadFromJsonAsync<List<EternalReddit.Shared.Models.Post>>();
+        Assert.Single(posts!);
+        Assert.Equal("devblog", posts![0].Community);
     }
 
     [Fact]

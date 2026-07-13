@@ -273,7 +273,8 @@ app.MapFallbackToFile("index.html", new StaticFileOptions
 RosterSeed.EnsureSeeded(
     app.Services.GetRequiredService<IPeerGroupStore>(),
     app.Services.GetRequiredService<IFigureStore>(),
-    app.Services.GetRequiredService<ICommunityStore>());
+    app.Services.GetRequiredService<ICommunityStore>(),
+    app.Services.GetRequiredService<IPostStore>());
 
 // One-time cleanup on startup: drop any legacy comments from non-approved figures.
 try { app.Services.GetRequiredService<IPostService>().PurgeUnapproved(); } catch { }

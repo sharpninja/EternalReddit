@@ -1,4 +1,5 @@
 @page "/p/{Id:guid}"
+@using Markdig
 @implements IAsyncDisposable
 @inject EternalRedditApi Api
 @inject NavigationManager Nav
@@ -47,7 +48,14 @@
                     }
                     · @Ago(_post.CreatedUtc)
                 </div>
-                <div class="ptext">@_post.Body</div>
+                @if (_blogSubs.Contains(_post.Community))
+                {
+                    <div class="ptext md">@RenderMd(_post.Body)</div>
+                }
+                else
+                {
+                    <div class="ptext">@_post.Body</div>
+                }
                 <div class="pactions">
                     <span>@_post.Replies.Count comments</span>
                     <button class="link" @onclick="Share">Share</button>
@@ -101,9 +109,13 @@
 @code {
     private static readonly string[] _sorts = { "hot", "rising", "new" };
 
+    private static readonly MarkdownPipeline MdPipeline =
+        new MarkdownPipelineBuilder().DisableHtml().UseAdvancedExtensions().Build();
+
     [Parameter] public Guid Id { get; set; }
     private Post? _post;
     private MeInfo? _me;
+    private HashSet<string> _blogSubs = new();
     private string _sort = "hot";
     private bool _loading = true;
     private bool _copied;
@@ -126,9 +138,14 @@
         try { _me = await Api.GetMeAsync(); } catch { /* try again on the next load */ }
     }
 
+    private MarkupString RenderMd(string body)
+        => (MarkupString)Markdown.ToHtml(body ?? "", MdPipeline);
+
     protected override async Task OnInitializedAsync()
     {
         await EnsureMe();
+        try { _blogSubs = (await Api.GetCommunitiesAsync()).Where(c => c.PostingRestricted).Select(c => c.Slug).ToHashSet(); }
+        catch { /* plain-text rendering fallback */ }
         _hub = new HubConnectionBuilder()
             .WithUrl(Nav.ToAbsoluteUri("hubs/feed"))
             .WithAutomaticReconnect()

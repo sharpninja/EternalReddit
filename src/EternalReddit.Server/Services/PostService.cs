@@ -195,7 +195,8 @@ public sealed class PostService : IPostService
         _posts.Add(post);
         _logger.LogInformation("Post created by {Author} in {Sub}", string.IsNullOrWhiteSpace(post.AuthorName) ? "anonymous" : post.AuthorName, community.Slug);
 
-        await GenerateReplyThreadAsync(post, ct);
+        if (community.AiParticipation)
+            await GenerateReplyThreadAsync(post, ct);
         await _notifier.FeedChangedAsync();
         return CreatePostResult.Created(_posts.Get(post.Id) ?? post);
     }

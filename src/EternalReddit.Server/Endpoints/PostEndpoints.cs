@@ -29,10 +29,15 @@ public static class PostEndpoints
             svc.Get(id) is { } post ? Results.Ok(post) : Results.NotFound());
 
         // --- Authenticated writes ---
-        group.MapPost("", async (IPostService svc, HttpContext http, CreatePostBody body, CancellationToken ct) =>
+        group.MapPost("", async (IPostService svc, HttpContext http, ICommunityStore communities, IConfiguration config, CreatePostBody body, CancellationToken ct) =>
         {
             if (string.IsNullOrWhiteSpace(body.Title)) return Results.BadRequest("Title is required.");
             if (string.IsNullOrWhiteSpace(body.Body)) return Results.BadRequest("Body is required.");
+
+            // Restricted subs (the dev blog) accept posts only from the admin.
+            if (communities.Get(body.Community ?? "") is { PostingRestricted: true }
+                && !AdminAccess.IsAdmin(http.User, AdminAccess.ConfiguredEmail(config)))
+                return Results.StatusCode(StatusCodes.Status403Forbidden);
 
             var request = new CreatePostRequest(
                 body.Title,

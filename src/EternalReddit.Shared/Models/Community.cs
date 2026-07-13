@@ -23,6 +23,12 @@ public sealed class Community
 
     public bool Enabled { get; set; } = true;
 
+    /// <summary>When false, the AI never posts or replies here (e.g. the dev blog).</summary>
+    public bool AiParticipation { get; set; } = true;
+
+    /// <summary>When true, only the admin can create posts here; everyone can still comment.</summary>
+    public bool PostingRestricted { get; set; }
+
     /// <summary>The model id configured for a provider in this sub, or null to use the provider default.</summary>
     public string? ResolveModel(AiProvider provider)
         => Models.FirstOrDefault(m => m.Provider == provider)?.ModelId is { Length: > 0 } id ? id : null;

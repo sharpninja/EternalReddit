@@ -33,8 +33,9 @@ public class SubFeedTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Single(generals!);
         Assert.Equal("war stories", generals![0].Body);
 
+        // 2 test posts + the seeded devblog post.
         var all = await client.GetFromJsonAsync<List<Post>>("/api/posts");
-        Assert.Equal(2, all!.Count);
+        Assert.Equal(3, all!.Count);
     }
 }
 
