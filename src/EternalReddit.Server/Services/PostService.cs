@@ -418,7 +418,7 @@ public sealed class PostService : IPostService
         var figure = _roster.Pick(community.GroupIds, exclude: parent?.Figure);
         var persona = _roster.Persona(figure);
         var branch = BranchTo(post.Replies, parent);
-        var ctx = new AiContext(community.Name, community.Description, community.ResolveModel(provider));
+        var ctx = new AiContext(community.Name, community.Description, community.ResolveModel(provider), community.ResolveEffort(provider));
         try
         {
             var body = await _generator.GenerateReplyBodyAsync(post, branch, figure, persona, parent?.Figure, provider, ctx, ct);

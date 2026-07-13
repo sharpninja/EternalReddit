@@ -43,7 +43,7 @@ public class DataStoreTests
                 Slug = "composers",
                 Name = "Composers",
                 GroupIds = new() { "composers" },
-                Models = new() { new AgentModel { Provider = AiProvider.Claude, ModelId = "claude-haiku-4-5" } }
+                Models = new() { new AgentModel { Provider = AiProvider.Claude, ModelId = "claude-haiku-4-5", Effort = "high" } }
             });
 
             var c = store.Get("composers");
@@ -51,7 +51,9 @@ public class DataStoreTests
             Assert.Equal("Composers", c!.Name);
             Assert.Contains("composers", c.GroupIds);
             Assert.Equal("claude-haiku-4-5", c.ResolveModel(AiProvider.Claude));
+            Assert.Equal("high", c.ResolveEffort(AiProvider.Claude));
             Assert.Null(c.ResolveModel(AiProvider.Grok));
+            Assert.Null(c.ResolveEffort(AiProvider.Grok));
         }
         finally { if (File.Exists(path)) File.Delete(path); }
     }

@@ -339,7 +339,9 @@ table.logs tr:first-child td { border-top: none; }
 .admin-model-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
 .admin-model-row .admin-name { width: 110px; flex-shrink: 0; }
 .admin-model-row .title-input { margin-bottom: 0; }
-.admin-model-row .model-select { flex: 1; min-width: 0; }
+.admin-model-row { flex-wrap: wrap; }
+.admin-model-row .model-select { flex: 1; min-width: 150px; }
+.admin-model-row .effort-select { flex: 0 0 auto; }
 .admin-stats { display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.85rem; }
 .link.danger:hover { color: #e5484d; }
 a.btn { display: inline-block; text-decoration: none; text-align: center; }

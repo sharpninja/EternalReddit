@@ -23,19 +23,31 @@ public sealed class ClaudeProvider : IAiProvider
     public bool IsConfigured => !string.IsNullOrWhiteSpace(_key);
     public string DefaultModel => _model;
 
-    public async Task<string> CompleteAsync(string system, string user, int maxTokens, string? model = null, CancellationToken ct = default)
+    public async Task<string> CompleteAsync(string system, string user, int maxTokens, string? model = null, string? effort = null, CancellationToken ct = default)
     {
         var http = _factory.CreateClient();
         using var req = new HttpRequestMessage(HttpMethod.Post, "https://api.anthropic.com/v1/messages");
         req.Headers.Add("x-api-key", _key);
         req.Headers.Add("anthropic-version", "2023-06-01");
-        req.Content = JsonContent.Create(new
-        {
-            model = model ?? _model,
-            max_tokens = maxTokens,
-            system,
-            messages = new[] { new { role = "user", content = user } }
-        });
+        // With an effort configured, enable adaptive thinking at that effort
+        // (supported on Claude 4.6+ models); otherwise plain completion.
+        req.Content = effort is null
+            ? JsonContent.Create(new
+            {
+                model = model ?? _model,
+                max_tokens = maxTokens,
+                system,
+                messages = new[] { new { role = "user", content = user } }
+            })
+            : JsonContent.Create(new
+            {
+                model = model ?? _model,
+                max_tokens = maxTokens,
+                system,
+                thinking = new { type = "adaptive" },
+                output_config = new { effort },
+                messages = new[] { new { role = "user", content = user } }
+            });
 
         using var res = await http.SendAsync(req, ct);
         res.EnsureSuccessStatusCode();
@@ -87,21 +99,21 @@ public abstract class OpenAiCompatibleProvider : IAiProvider
     public bool IsConfigured => !string.IsNullOrWhiteSpace(_key);
     public string DefaultModel => _model;
 
-    public async Task<string> CompleteAsync(string system, string user, int maxTokens, string? model = null, CancellationToken ct = default)
+    public async Task<string> CompleteAsync(string system, string user, int maxTokens, string? model = null, string? effort = null, CancellationToken ct = default)
     {
         var http = _factory.CreateClient();
         using var req = new HttpRequestMessage(HttpMethod.Post, _endpoint);
         req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _key);
-        req.Content = JsonContent.Create(new
+        var messages = new[]
         {
-            model = model ?? _model,
-            max_tokens = maxTokens,
-            messages = new[]
-            {
-                new { role = "system", content = system },
-                new { role = "user", content = user }
-            }
-        });
+            new { role = "system", content = system },
+            new { role = "user", content = user }
+        };
+        // reasoning_effort is the OpenAI-compatible knob (supported by OpenAI
+        // reasoning models and xAI); only sent when configured.
+        req.Content = effort is null
+            ? JsonContent.Create(new { model = model ?? _model, max_tokens = maxTokens, messages })
+            : JsonContent.Create(new { model = model ?? _model, max_tokens = maxTokens, reasoning_effort = effort, messages });
 
         using var res = await http.SendAsync(req, ct);
         res.EnsureSuccessStatusCode();
@@ -165,8 +177,9 @@ public sealed class HuggingFaceProvider : IAiProvider
     public bool IsConfigured => !string.IsNullOrWhiteSpace(_key);
     public string DefaultModel => _model;
 
-    public async Task<string> CompleteAsync(string system, string user, int maxTokens, string? model = null, CancellationToken ct = default)
+    public async Task<string> CompleteAsync(string system, string user, int maxTokens, string? model = null, string? effort = null, CancellationToken ct = default)
     {
+        // effort has no HF Inference API equivalent; ignored.
         var http = _factory.CreateClient();
         using var req = new HttpRequestMessage(HttpMethod.Post, $"https://api-inference.huggingface.co/models/{model ?? _model}");
         req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _key);

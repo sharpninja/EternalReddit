@@ -25,12 +25,19 @@ public sealed class Community
 
     /// <summary>The model id configured for a provider in this sub, or null to use the provider default.</summary>
     public string? ResolveModel(AiProvider provider)
-        => Models.FirstOrDefault(m => m.Provider == provider)?.ModelId;
+        => Models.FirstOrDefault(m => m.Provider == provider)?.ModelId is { Length: > 0 } id ? id : null;
+
+    /// <summary>The reasoning effort configured for a provider in this sub, or null for the provider default.</summary>
+    public string? ResolveEffort(AiProvider provider)
+        => Models.FirstOrDefault(m => m.Provider == provider)?.Effort is { Length: > 0 } e ? e : null;
 }
 
-/// <summary>A per-sub override of the model a given AI provider uses.</summary>
+/// <summary>A per-sub override of the model (and optional reasoning effort) a given AI provider uses.</summary>
 public sealed class AgentModel
 {
     public AiProvider Provider { get; set; }
     public string ModelId { get; set; } = "";
+
+    /// <summary>Reasoning effort: "low" | "medium" | "high"; empty = provider default.</summary>
+    public string? Effort { get; set; }
 }

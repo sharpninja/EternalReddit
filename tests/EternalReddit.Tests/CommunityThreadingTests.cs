@@ -55,6 +55,25 @@ public class CommunityThreadingTests
     }
 
     [Fact]
+    public async Task Per_sub_effort_override_reaches_the_provider()
+    {
+        var fake = new FakeAiProvider(AiProvider.Claude, "ok");
+        var svc = Build(new ReplyGenerator(new[] { fake }));
+
+        // Configure a Claude effort on the composers sub, then generate into it.
+        var composers = _communities.Get("composers")!;
+        composers.Models.First(m => m.Provider == AiProvider.Claude).Effort = "high";
+        _communities.Upsert(composers);
+
+        await svc.CreateSystemPostAsync("composers", "Johann Sebastian Bach", "Counterpoint?", "Fugues?");
+        Assert.Equal("high", fake.LastEffort);
+
+        // Open sub: no effort configured.
+        await svc.CreateSystemPostAsync("allofhistory", "Plato", "Forms?", "Discuss.");
+        Assert.Null(fake.LastEffort);
+    }
+
+    [Fact]
     public async Task Open_sub_has_no_model_override()
     {
         var fake = new FakeAiProvider(AiProvider.Claude, "ok");

@@ -23,12 +23,14 @@ public sealed class FakeAiProvider : IAiProvider
     public string? LastUser { get; private set; }
     public string? LastSystem { get; private set; }
     public string? LastModel { get; private set; }
+    public string? LastEffort { get; private set; }
 
-    public Task<string> CompleteAsync(string system, string user, int maxTokens, string? model = null, CancellationToken ct = default)
+    public Task<string> CompleteAsync(string system, string user, int maxTokens, string? model = null, string? effort = null, CancellationToken ct = default)
     {
         LastSystem = system;
         LastUser = user;
         LastModel = model;
+        LastEffort = effort;
         return Task.FromResult(_response);
     }
 

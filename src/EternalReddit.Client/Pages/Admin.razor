@@ -48,7 +48,7 @@
                             {
                                 @foreach (var m in c.Models)
                                 {
-                                    <span class="model-chip badge-@m.Provider.ToString().ToLowerInvariant()-outline">@m.Provider · @m.ModelId</span>
+                                    <span class="model-chip badge-@m.Provider.ToString().ToLowerInvariant()-outline">@m.Provider · @(string.IsNullOrEmpty(m.ModelId) ? "default model" : m.ModelId)@(string.IsNullOrEmpty(m.Effort) ? "" : $" · {m.Effort}")</span>
                                 }
                             }
                         </div>

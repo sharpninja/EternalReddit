@@ -122,7 +122,7 @@ public static class PostEndpoints
             var community = communities.Get(string.IsNullOrWhiteSpace(sub) ? "allofhistory" : sub) ?? communities.Get("allofhistory");
             var slug = community?.Slug ?? "allofhistory";
             var provider = gen.Available[0];
-            var ctx = community is null ? AiContext.Default : new AiContext(community.Name, community.Description, community.ResolveModel(provider));
+            var ctx = community is null ? AiContext.Default : new AiContext(community.Name, community.Description, community.ResolveModel(provider), community.ResolveEffort(provider));
             var draft = await gen.GeneratePostAsync(figure, roster.Persona(figure), provider, ctx, ct);
             var post = await svc.CreateSystemPostAsync(slug, figure, draft.Title, draft.Body, ct);
             return post is null ? Results.UnprocessableEntity("Blocked by moderation.") : Results.Ok(post);

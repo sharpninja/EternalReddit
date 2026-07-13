@@ -81,7 +81,7 @@ public sealed class CharacterPostBackgroundService : BackgroundService
         var figure = _roster.Pick(community.GroupIds);
         if (string.IsNullOrEmpty(figure)) return;
         var persona = _roster.Persona(figure);
-        var ctx = new AiContext(community.Name, community.Description, community.ResolveModel(provider));
+        var ctx = new AiContext(community.Name, community.Description, community.ResolveModel(provider), community.ResolveEffort(provider));
         var draft = await _generator.GeneratePostAsync(figure, persona, provider, ctx, ct);
         var post = await _service.CreateSystemPostAsync(community.Slug, figure, draft.Title, draft.Body, ct);
         if (post is not null)

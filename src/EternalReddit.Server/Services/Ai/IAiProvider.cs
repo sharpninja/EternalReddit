@@ -16,7 +16,7 @@ public interface IAiProvider
     /// <summary>The model used when no per-sub override is supplied.</summary>
     string DefaultModel { get; }
 
-    Task<string> CompleteAsync(string system, string user, int maxTokens, string? model = null, CancellationToken ct = default);
+    Task<string> CompleteAsync(string system, string user, int maxTokens, string? model = null, string? effort = null, CancellationToken ct = default);
 
     /// <summary>The models currently available from this provider (best effort; at least the default).</summary>
     Task<IReadOnlyList<string>> ListModelsAsync(CancellationToken ct = default);

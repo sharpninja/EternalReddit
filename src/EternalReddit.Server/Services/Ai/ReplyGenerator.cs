@@ -49,7 +49,7 @@ public sealed class ReplyGenerator : IReplyGenerator
     public async Task<string> GenerateReplyBodyAsync(Post post, IReadOnlyList<Reply> branch, string figure, string? persona, string? parentFigure, AiProvider provider, AiContext ctx, CancellationToken ct = default)
     {
         var ai = Resolve(provider);
-        var text = await ai.CompleteAsync(ReplySystem(figure, persona, parentFigure, ctx.CommunityName), BuildBranchPrompt(post, branch, figure, parentFigure), 400, ctx.ModelId, ct);
+        var text = await ai.CompleteAsync(ReplySystem(figure, persona, parentFigure, ctx.CommunityName), BuildBranchPrompt(post, branch, figure, parentFigure), 400, ctx.ModelId, ctx.Effort, ct);
         return CleanText(text);
     }
 
@@ -63,7 +63,7 @@ public sealed class ReplyGenerator : IReplyGenerator
             "wry observation. Never build humor on, or glorify, atrocity, genocide, slavery, or violent conquest. " +
             "Do not fabricate real quotes. Reply with ONLY a JSON object: " +
             "{\"title\":\"a short title\",\"body\":\"1-3 sentences\"}.";
-        return ParsePost(await ai.CompleteAsync(system, "Write your post now.", 400, ctx.ModelId, ct));
+        return ParsePost(await ai.CompleteAsync(system, "Write your post now.", 400, ctx.ModelId, ctx.Effort, ct));
     }
 
     public async Task<int> ChooseAsync(IReadOnlyList<string> options, string instruction, AiProvider provider, string? modelId = null, CancellationToken ct = default)
@@ -73,7 +73,7 @@ public sealed class ReplyGenerator : IReplyGenerator
         sb.Append(instruction).Append("\n\n");
         foreach (var o in options) sb.Append(o).Append('\n');
         sb.Append("\nReply with ONLY the number of your choice.");
-        var text = await ai.CompleteAsync("You choose one option from a numbered list. Answer with only the number.", sb.ToString(), 12, modelId, ct);
+        var text = await ai.CompleteAsync("You choose one option from a numbered list. Answer with only the number.", sb.ToString(), 12, modelId, null, ct);
         var m = System.Text.RegularExpressions.Regex.Match(text ?? "", "\\d+");
         return m.Success && int.TryParse(m.Value, out var n) && n >= 1 ? n : 1;
     }

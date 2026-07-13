@@ -50,6 +50,13 @@
                         }
                         <option value="__custom__">Custom…</option>
                     </select>
+                    <select class="sub-select effort-select" title="Reasoning effort"
+                            value="@(_sub.ResolveEffort(p) ?? "")" @onchange="e => SetEffort(p, e.Value?.ToString())">
+                        <option value="">Effort: default</option>
+                        <option value="low">Effort: low</option>
+                        <option value="medium">Effort: medium</option>
+                        <option value="high">Effort: high</option>
+                    </select>
                 </div>
                 @if (sel == "__custom__")
                 {
@@ -141,11 +148,28 @@
         SetModel(p, string.IsNullOrEmpty(value) ? null : value);
     }
 
+    // Model and effort share one AgentModel entry per provider; setting either
+    // preserves the other, and the entry is dropped only when both are default.
+    private AgentModel EntryFor(AiProvider p)
+    {
+        var entry = _sub.Models.FirstOrDefault(m => m.Provider == p);
+        if (entry is null) { entry = new AgentModel { Provider = p }; _sub.Models.Add(entry); }
+        return entry;
+    }
+
+    private void PruneIfDefault(AiProvider p)
+        => _sub.Models.RemoveAll(m => m.Provider == p && string.IsNullOrEmpty(m.ModelId) && string.IsNullOrEmpty(m.Effort));
+
     private void SetModel(AiProvider p, string? modelId)
     {
-        _sub.Models.RemoveAll(m => m.Provider == p);
-        if (!string.IsNullOrWhiteSpace(modelId))
-            _sub.Models.Add(new AgentModel { Provider = p, ModelId = modelId.Trim() });
+        EntryFor(p).ModelId = string.IsNullOrWhiteSpace(modelId) ? "" : modelId.Trim();
+        PruneIfDefault(p);
+    }
+
+    private void SetEffort(AiProvider p, string? effort)
+    {
+        EntryFor(p).Effort = string.IsNullOrWhiteSpace(effort) ? null : effort;
+        PruneIfDefault(p);
     }
 
     private async Task Save()
