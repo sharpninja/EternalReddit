@@ -142,6 +142,6 @@ Scope: layer-1+
 
 ## FR-UI-005 Carries the estate footer marker
 
-The host page template (src/EternalReddit.Client/wwwroot/index.html) carries the <!--ETERNALSOCIAL-FOOTER--> marker just before </body> so the gateway can inject the pinned estate footer; direct visits see only an invisible HTML comment.
+The host page template (src/EternalReddit.Client/wwwroot/index.html) carries the <!--ETERNALSOCIAL-FOOTER--> marker just before </body> and reserves footer space via var(--es-footer-h, 0rem) - body padding plus a shortened sticky sidenav - so gateway-injected footer content never overlaps the app; direct visits see only an invisible comment and zero reserved space.
 Scope: layer-1+
 

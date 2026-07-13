@@ -62,6 +62,13 @@ linking the enabled networks). Pages without the marker, non-HTML responses, and
 compressed bodies pass through untouched; reached directly (no gateway), the
 marker is an invisible HTML comment.
 
+The injected footer publishes its height as `:root { --es-footer-h }`. Templates
+must reserve space with `var(--es-footer-h, 0rem)` - body padding for
+document-scrolled pages, and a `calc(100vh - var(--es-footer-h, 0rem))` height on
+any full-viewport or inner-scrolled container (sticky sidebars, app shells) - so
+content never hides behind the footer, and the reservation collapses to zero on
+direct visits.
+
 ## Deployment triggers
 
 Each repo deploys independently: an Octopus Git trigger on each project polls
