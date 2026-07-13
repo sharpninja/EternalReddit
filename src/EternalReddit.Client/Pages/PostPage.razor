@@ -27,6 +27,11 @@
             </div>
             <div class="pmain">
                 <div class="pmeta">
+                    @if (!string.IsNullOrEmpty(_post.Community))
+                    {
+                        <a class="subbadge" href="@($"r/{_post.Community}")">r/@_post.Community</a>
+                        <span> · </span>
+                    }
                     Posted by
                     @if (!string.IsNullOrEmpty(_post.AuthorName))
                     {
@@ -52,6 +57,21 @@
                     }
                 </div>
 
+                @if (_me is { Authenticated: true })
+                {
+                    <div class="reply-composer">
+                        <textarea class="body-input" @bind="_newComment" placeholder="Join the conversation..."></textarea>
+                        <div class="composer-actions">
+                            <span class="dim">@_commentStatus</span>
+                            <button class="btn" @onclick="SubmitComment" disabled="@_commenting">@(_commenting ? "Posting..." : "Comment")</button>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <p class="dim login-hint">Log in to join the conversation.</p>
+                }
+
                 <div class="sort-tabs comments-sort">
                     @foreach (var s in _sorts)
                     {
@@ -65,7 +85,7 @@
                     {
                         @foreach (var top in tops)
                         {
-                            <CommentView Reply="top" All="_post.Replies" PostId="_post.Id" Sort="_sort" OnVoted="StateHasChanged" />
+                            <CommentView Reply="top" All="_post.Replies" PostId="_post.Id" Sort="_sort" OnVoted="StateHasChanged" CanReply="_me is { Authenticated: true }" />
                         }
                     }
                     else
@@ -83,15 +103,20 @@
 
     [Parameter] public Guid Id { get; set; }
     private Post? _post;
+    private MeInfo? _me;
     private string _sort = "hot";
     private bool _loading = true;
     private bool _copied;
+    private bool _commenting;
+    private string _newComment = "";
+    private string _commentStatus = "";
     private HubConnection? _hub;
 
     protected override async Task OnParametersSetAsync() => await LoadPost();
 
     protected override async Task OnInitializedAsync()
     {
+        try { _me = await Api.GetMeAsync(); } catch { /* composer stays hidden */ }
         _hub = new HubConnectionBuilder()
             .WithUrl(Nav.ToAbsoluteUri("hubs/feed"))
             .WithAutomaticReconnect()
@@ -129,6 +154,35 @@
         _loading = true;
         _post = await Api.GetPostAsync(Id);
         _loading = false;
+    }
+
+    private async Task SubmitComment()
+    {
+        if (_post is null) return;
+        if (string.IsNullOrWhiteSpace(_newComment)) { _commentStatus = "Say something first."; return; }
+        _commenting = true;
+        _commentStatus = "";
+        try
+        {
+            var res = await Api.AddReplyAsync(_post.Id, null, _newComment);
+            if (res.IsSuccessStatusCode)
+            {
+                _newComment = "";
+                await LoadPost();
+            }
+            else
+            {
+                _commentStatus = (int)res.StatusCode switch
+                {
+                    429 => "Slow down a moment.",
+                    403 => "You're banned.",
+                    422 => "Blocked by the moderator.",
+                    _ => "Log in to comment."
+                };
+            }
+        }
+        catch { _commentStatus = "Log in to comment."; }
+        _commenting = false;
     }
 
     private async Task VotePost(string dir)

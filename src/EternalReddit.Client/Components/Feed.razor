@@ -1,0 +1,237 @@
+@namespace EternalReddit.Client.Components
+@implements IAsyncDisposable
+@inject EternalRedditApi Api
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<div class="layout">
+    <div class="feed-col">
+        <div class="composer">
+            <input class="title-input" @bind="_title" placeholder="Title" />
+            <textarea class="body-input" @bind="_body" placeholder="Ask history anything..."></textarea>
+            <div class="composer-actions">
+                <select class="sub-select" @bind="_composeSub" title="Post to community">
+                    @foreach (var c in _subs)
+                    {
+                        <option value="@c.Slug">r/@c.Name</option>
+                    }
+                </select>
+                <span class="dim">@_status</span>
+                <button class="btn" @onclick="Submit" disabled="@_posting">@(_posting ? "Posting..." : "Post")</button>
+            </div>
+        </div>
+
+        <div class="sort-tabs">
+            @foreach (var s in _sorts)
+            {
+                <button class="sort-tab @(s == _sort ? "active" : "")" @onclick="() => SetSort(s)">@Cap(s)</button>
+            }
+        </div>
+
+        @if (_loading)
+        {
+            <p class="dim center">Loading feed...</p>
+        }
+        else if (_feed.Count == 0)
+        {
+            <p class="dim center">No posts yet. Be the first.</p>
+        }
+        else
+        {
+            @foreach (var post in _feed)
+            {
+                <div class="post">
+                    <div class="pvote">
+                        <button class="arrow" @onclick='() => VotePost(post, "up")'>&#9650;</button>
+                        <span class="score">@post.Score</span>
+                        <button class="arrow" @onclick='() => VotePost(post, "down")'>&#9660;</button>
+                    </div>
+                    <div class="pmain">
+                        <div class="pmeta">
+                            @if (!string.IsNullOrEmpty(post.Community))
+                            {
+                                <a class="subbadge" href="@($"r/{post.Community}")">r/@post.Community</a>
+                                <span> · </span>
+                            }
+                            Posted by
+                            @if (!string.IsNullOrEmpty(post.AuthorName))
+                            {
+                                <a class="authorlink" href="@($"u/{Uri.EscapeDataString(post.AuthorName)}")">@post.AuthorName</a>
+                            }
+                            else
+                            {
+                                <span>u/anon</span>
+                            }
+                            · @Ago(post.CreatedUtc)
+                        </div>
+                        <a class="ptitle-link" href="@($"p/{post.Id}")">
+                            <h3 class="ptitle">@(string.IsNullOrWhiteSpace(post.Title) ? Snippet(post.Body, 90) : post.Title)</h3>
+                        </a>
+                        <div class="ptext">@post.Body</div>
+
+                        @{ var top = TopComment(post); }
+                        @if (top is not null)
+                        {
+                            <a class="top-comment" href="@($"p/{post.Id}")">
+                                <div class="tc-meta"><span class="figure">@DisplayAuthor(top)</span><span class="dim"> · top comment · @top.Score pts</span></div>
+                                <div class="tc-body">@Snippet(top.Body, 180)</div>
+                            </a>
+                        }
+
+                        <div class="pactions">
+                            <a class="link expand" href="@($"p/{post.Id}")">&#128172; @post.Replies.Count comments &rsaquo;</a>
+                            <button class="link" @onclick="() => Share(post)">Share</button>
+                            @if (_copied.Contains(post.Id))
+                            {
+                                <span class="copied-bubble">Link copied!</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+
+    <TopPosters Posters="_topPosters" />
+</div>
+
+@code {
+    private static readonly string[] _sorts = { "hot", "rising", "new" };
+
+    /// <summary>When set, the feed and the composer are scoped to this sub.</summary>
+    [Parameter] public string? Sub { get; set; }
+
+    private List<Post> _feed = new();
+    private List<Community> _subs = new();
+    private IReadOnlyList<TopPoster> _topPosters = Array.Empty<TopPoster>();
+    private string _sort = "hot";
+    private string _composeSub = "allofhistory";
+    private bool _loading = true;
+    private bool _posting;
+    private string? _title;
+    private string _body = "";
+    private string _status = "";
+    private readonly HashSet<Guid> _copied = new();
+    private HubConnection? _hub;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrEmpty(Sub)) _composeSub = Sub;
+        await Load();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { _subs = await Api.GetCommunitiesAsync(); } catch { /* picker falls back to the default */ }
+        if (_subs.Count == 0) _subs.Add(new Community { Slug = "allofhistory", Name = "AllOfHistory" });
+
+        _hub = new HubConnectionBuilder()
+            .WithUrl(Nav.ToAbsoluteUri("hubs/feed"))
+            .WithAutomaticReconnect()
+            .Build();
+        _hub.On("FeedChanged", async () =>
+        {
+            await Load();
+            await InvokeAsync(StateHasChanged);
+        });
+        _hub.On<ScoreUpdate>("ScoreChanged", async u =>
+        {
+            if (u.ReplyId is null)
+            {
+                var post = _feed.FirstOrDefault(p => p.Id == u.PostId);
+                if (post is not null) { post.Upvotes = u.Upvotes; post.Downvotes = u.Downvotes; await InvokeAsync(StateHasChanged); }
+            }
+        });
+        try { await _hub.StartAsync(); } catch { /* live updates are optional */ }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hub is not null) await _hub.DisposeAsync();
+    }
+
+    private async Task Load()
+    {
+        _loading = true;
+        try { _feed = await Api.GetFeedAsync(_sort, sub: Sub); }
+        catch { _status = "Couldn't load the feed."; }
+        try { _topPosters = await Api.GetTopPostersAsync(); }
+        catch { /* leaderboard is best-effort */ }
+        _loading = false;
+    }
+
+    private async Task SetSort(string sort)
+    {
+        if (_sort == sort) return;
+        _sort = sort;
+        await Load();
+    }
+
+    private async Task Submit()
+    {
+        if (string.IsNullOrWhiteSpace(_title)) { _status = "Title is required."; return; }
+        if (string.IsNullOrWhiteSpace(_body)) { _status = "Body is required."; return; }
+        _posting = true;
+        _status = "";
+        try
+        {
+            var res = await Api.CreatePostAsync(_title, _body, _composeSub);
+            if (res.IsSuccessStatusCode)
+            {
+                _title = null;
+                _body = "";
+                await Load();
+            }
+            else
+            {
+                _status = (int)res.StatusCode switch
+                {
+                    429 => "Slow down - 1 post per minute.",
+                    403 => "You're banned.",
+                    422 => "Blocked by the moderator.",
+                    400 => "Title and body are required.",
+                    _ => "Log in to post."
+                };
+            }
+        }
+        catch { _status = "Log in to post."; }
+        _posting = false;
+    }
+
+    private async Task VotePost(Post post, string dir)
+    {
+        var r = await Api.VotePostAsync(post.Id, dir);
+        if (r is not null) { post.Upvotes = r.Upvotes; post.Downvotes = r.Downvotes; }
+    }
+
+    private async Task Share(Post post)
+    {
+        var url = Nav.ToAbsoluteUri($"p/{post.Id}").ToString();
+        try { await JS.InvokeVoidAsync("navigator.clipboard.writeText", url); } catch { /* clipboard may be blocked */ }
+        _ = Api.SharePostAsync(post.Id);
+        _copied.Add(post.Id);
+        StateHasChanged();
+        await Task.Delay(1800);
+        _copied.Remove(post.Id);
+        StateHasChanged();
+    }
+
+    private static string DisplayAuthor(Reply r)
+        => r.Provider == AiProvider.User ? (r.AuthorName ?? "user") : r.Figure;
+
+    private static Reply? TopComment(Post p)
+        => p.Replies.OrderByDescending(r => r.Score).ThenBy(r => r.CreatedUtc).FirstOrDefault();
+
+    private static string Snippet(string s, int max)
+        => string.IsNullOrEmpty(s) ? "" : (s.Length <= max ? s : s[..max].TrimEnd() + "…");
+
+    private static string Cap(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
+
+    private static string Ago(DateTime utc)
+    {
+        var d = DateTime.UtcNow - utc;
+        return d.TotalMinutes < 60 ? $"{(int)Math.Max(1, d.TotalMinutes)}m ago"
+             : d.TotalHours < 24 ? $"{(int)d.TotalHours}h ago"
+             : $"{(int)d.TotalDays}d ago";
+    }
+}

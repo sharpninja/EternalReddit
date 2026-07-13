@@ -9,7 +9,7 @@ namespace EternalReddit.Server.Endpoints;
 
 public static class PostEndpoints
 {
-    public sealed record CreatePostBody(string? Title, string Body);
+    public sealed record CreatePostBody(string? Title, string Body, string? Community = null);
     public sealed record AddReplyBody(Guid? ParentReplyId, string Body);
 
     public static IEndpointRouteBuilder MapPostEndpoints(this IEndpointRouteBuilder app)
@@ -17,8 +17,13 @@ public static class PostEndpoints
         var group = app.MapGroup("/api/posts");
 
         // --- Anonymous reads ---
-        group.MapGet("", (IPostService svc, int? count, string? sort) =>
-            Results.Ok(SortFeed(svc.GetRecent(200), sort).Take(count is > 0 ? count.Value : 50)));
+        group.MapGet("", (IPostService svc, int? count, string? sort, string? sub) =>
+        {
+            IReadOnlyList<Post> posts = svc.GetRecent(200);
+            if (!string.IsNullOrWhiteSpace(sub))
+                posts = posts.Where(p => p.Community == sub).ToList();
+            return Results.Ok(SortFeed(posts, sort).Take(count is > 0 ? count.Value : 50));
+        });
 
         group.MapGet("/{id:guid}", (IPostService svc, Guid id) =>
             svc.Get(id) is { } post ? Results.Ok(post) : Results.NotFound());
@@ -34,7 +39,8 @@ public static class PostEndpoints
                 body.Body,
                 AuthorId(http),
                 DisplayName(http),
-                http.Connection.RemoteIpAddress?.ToString() ?? "unknown");
+                http.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                body.Community ?? "");
 
             var result = await svc.CreateAsync(request, ct);
             return result.Status switch

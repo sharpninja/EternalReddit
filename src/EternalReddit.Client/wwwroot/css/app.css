@@ -204,6 +204,46 @@ table.logs tr:first-child td { border-top: none; }
     padding: 0 6px; border-radius: 3px; text-transform: uppercase;
 }
 
+/* ---- subs: badge, composer picker, topbar switcher ---- */
+.subbadge {
+    display: inline-block; font-size: 0.72rem; font-weight: 700; color: var(--accent);
+    background: #fff0e9; border: 1px solid #ffd6c2; padding: 0 7px; border-radius: 999px;
+}
+.subbadge:hover { background: var(--accent); color: #fff; }
+.sub-select, .sub-switcher {
+    border: 1px solid var(--line); border-radius: 6px; background: var(--bg);
+    font: inherit; font-size: 0.82rem; padding: 5px 8px; color: var(--ink);
+}
+.sub-switcher { margin-left: 4px; }
+
+/* ---- comment composers (thread page + inline reply) ---- */
+.reply-composer { margin: 12px 0 4px; }
+.reply-composer .body-input { min-height: 52px; }
+.inline-reply { margin: 8px 0; }
+.inline-reply .body-input { min-height: 48px; }
+.reply-toggle { margin-left: 8px; font-size: 0.75rem; }
+.login-hint { margin: 12px 0 4px; }
+
+/* ---- admin page ---- */
+.admin-tabs { margin-top: 10px; }
+.admin-section { margin-bottom: 14px; }
+.admin-row {
+    display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+    padding: 6px 0; border-top: 1px solid var(--line); font-size: 0.85rem;
+}
+.admin-row:first-of-type { border-top: none; }
+.admin-name { font-weight: 700; }
+.admin-snippet { font-size: 0.8rem; }
+.admin-new { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.admin-new .title-input { flex: 1; min-width: 140px; margin-bottom: 0; }
+.admin-checks { display: flex; gap: 12px; flex-wrap: wrap; margin: 6px 0 10px; }
+.admin-check { font-size: 0.85rem; display: inline-flex; align-items: center; gap: 5px; }
+.admin-model-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.admin-model-row .admin-name { width: 110px; }
+.admin-model-row .title-input { margin-bottom: 0; }
+.admin-stats { display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.85rem; }
+.link.danger:hover { color: #e5484d; }
+
 /* ---- profile + clickable names ---- */
 .profile-head { margin-bottom: 14px; }
 .profile-name { margin: 0; font-size: 1.3rem; }

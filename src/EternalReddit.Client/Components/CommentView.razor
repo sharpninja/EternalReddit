@@ -8,21 +8,42 @@
     </div>
     <div class="cmain">
         <div class="cmeta">
-            <a class="figure" href="@($"u/{Uri.EscapeDataString(Reply.Figure)}")">@Reply.Figure</a>
+            @if (Reply.Provider == AiProvider.User)
+            {
+                <a class="authorlink" href="@($"u/{Uri.EscapeDataString(Reply.AuthorName ?? "user")}")">@(Reply.AuthorName ?? "user")</a>
+            }
+            else
+            {
+                <a class="figure" href="@($"u/{Uri.EscapeDataString(Reply.Figure)}")">@Reply.Figure</a>
+            }
             @if (Reply.Figure == "Christopher Columbus")
             {
                 <span class="achievement" title="Perpetually first to plant the flag">&#128681; Flag Planter</span>
             }
-            @if (Reply.Provider != AiProvider.Scripted)
+            @if (Reply.Provider != AiProvider.Scripted && Reply.Provider != AiProvider.User)
             {
                 <span class="badge badge-@Reply.Provider.ToString().ToLowerInvariant()">@Reply.Provider</span>
             }
             <span class="dim">· @Ago(Reply.CreatedUtc)@(Reply.IsBackground ? " · auto" : "")</span>
+            @if (CanReply)
+            {
+                <button class="link reply-toggle" @onclick="() => _replying = !_replying">@(_replying ? "Cancel" : "Reply")</button>
+            }
         </div>
         <div class="ctext">@Reply.Body</div>
+        @if (_replying)
+        {
+            <div class="inline-reply">
+                <textarea class="body-input" @bind="_replyText" placeholder="@($"Reply to {DisplayName()}...")"></textarea>
+                <div class="composer-actions">
+                    <span class="dim">@_replyStatus</span>
+                    <button class="btn" @onclick="SubmitReply" disabled="@_sending">@(_sending ? "Replying..." : "Reply")</button>
+                </div>
+            </div>
+        }
         @foreach (var child in Children)
         {
-            <CommentView Reply="child" All="All" PostId="PostId" Sort="Sort" OnVoted="OnVoted" />
+            <CommentView Reply="child" All="All" PostId="PostId" Sort="Sort" OnVoted="OnVoted" CanReply="CanReply" />
         }
     </div>
 </div>
@@ -33,10 +54,18 @@
     [Parameter] public Guid PostId { get; set; }
     [Parameter] public string Sort { get; set; } = "hot";
 
+    /// <summary>True when the current user is logged in and may reply.</summary>
+    [Parameter] public bool CanReply { get; set; }
+
     /// <summary>Raised after a comment vote so the parent can refresh the karma leaderboard.</summary>
     [Parameter] public EventCallback OnVoted { get; set; }
 
     [Inject] public EternalRedditApi Api { get; set; } = default!;
+
+    private bool _replying;
+    private bool _sending;
+    private string _replyText = "";
+    private string _replyStatus = "";
 
     private IEnumerable<Reply> Children => Order(All.Where(r => r.ParentReplyId == Reply.Id), Sort);
 
@@ -47,6 +76,38 @@
         "rising" => replies.OrderByDescending(r => r.Score / Math.Pow(Math.Max(0, (DateTime.UtcNow - r.CreatedUtc).TotalHours) + 2, 1.2)).ThenByDescending(r => r.CreatedUtc),
         _ => replies.OrderByDescending(r => r.Score).ThenBy(r => r.CreatedUtc),
     };
+
+    private string DisplayName()
+        => Reply.Provider == AiProvider.User ? (Reply.AuthorName ?? "user") : Reply.Figure;
+
+    private async Task SubmitReply()
+    {
+        if (string.IsNullOrWhiteSpace(_replyText)) { _replyStatus = "Say something first."; return; }
+        _sending = true;
+        _replyStatus = "";
+        try
+        {
+            var res = await Api.AddReplyAsync(PostId, Reply.Id, _replyText);
+            if (res.IsSuccessStatusCode)
+            {
+                _replyText = "";
+                _replying = false; // the FeedChanged broadcast reloads the thread
+            }
+            else
+            {
+                _replyStatus = (int)res.StatusCode switch
+                {
+                    429 => "Slow down a moment.",
+                    403 => "You're banned.",
+                    422 => "Blocked by the moderator.",
+                    404 => "That comment is gone.",
+                    _ => "Log in to reply."
+                };
+            }
+        }
+        catch { _replyStatus = "Log in to reply."; }
+        _sending = false;
+    }
 
     private async Task Vote(string dir)
     {

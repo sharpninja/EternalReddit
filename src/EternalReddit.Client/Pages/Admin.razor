@@ -1,0 +1,426 @@
+@page "/admin"
+@inject EternalRedditApi Api
+
+<PageTitle>Admin - EternalReddit</PageTitle>
+
+<div class="postpage">
+    <a class="link back" href="">&larr; back to feed</a>
+
+    @if (_loading)
+    {
+        <p class="dim center">Loading...</p>
+    }
+    else if (_me is not { IsAdmin: true })
+    {
+        <p class="dim center">You are not authorized to view this page.</p>
+    }
+    else
+    {
+        <h2 class="logs-title">Admin</h2>
+        <div class="sort-tabs admin-tabs">
+            @foreach (var (key, label) in _tabs)
+            {
+                <button class="sort-tab @(key == _tab ? "active" : "")" @onclick="() => SetTab(key)">@label</button>
+            }
+        </div>
+        <p class="dim">@_status</p>
+
+        @if (_tab == "subs")
+        {
+            <div class="side-card admin-section">
+                <div class="side-title">Communities</div>
+                @foreach (var c in _subs)
+                {
+                    <div class="admin-row">
+                        <span class="admin-name">r/@c.Slug</span>
+                        <span class="dim">@c.Name · @(c.GroupIds.Count == 0 ? "open to all" : string.Join(", ", c.GroupIds))@(c.Enabled ? "" : " · disabled")</span>
+                        <button class="link" @onclick="() => EditSub(c)">Edit</button>
+                        @if (c.Slug != "allofhistory")
+                        {
+                            <button class="link danger" @onclick="() => DeleteSub(c.Slug)">Delete</button>
+                        }
+                    </div>
+                }
+                <div class="admin-new">
+                    <input class="title-input" placeholder="new-slug" @bind="_newSubSlug" />
+                    <input class="title-input" placeholder="Display Name" @bind="_newSubName" />
+                    <button class="btn" @onclick="NewSub">Add sub</button>
+                </div>
+            </div>
+
+            @if (_editSub is not null)
+            {
+                <div class="side-card admin-section">
+                    <div class="side-title">Edit r/@_editSub.Slug</div>
+                    <input class="title-input" placeholder="Display name" @bind="_editSub.Name" />
+                    <input class="title-input" placeholder="Description" @bind="_editSub.Description" />
+                    <label class="admin-check"><input type="checkbox" @bind="_editSub.Enabled" /> Enabled</label>
+
+                    <div class="side-sub dim">Peer groups (none checked = open to every figure)</div>
+                    <div class="admin-checks">
+                        @foreach (var g in _groups)
+                        {
+                            <label class="admin-check">
+                                <input type="checkbox" checked="@_editSub.GroupIds.Contains(g.Slug)"
+                                       @onchange="e => ToggleList(_editSub.GroupIds, g.Slug, e)" /> @g.Name
+                            </label>
+                        }
+                    </div>
+
+                    <div class="side-sub dim">Model per agent in this sub (blank = provider default)</div>
+                    @foreach (var p in _providers)
+                    {
+                        <div class="admin-model-row">
+                            <span class="admin-name">@p</span>
+                            <input class="title-input" placeholder="model id"
+                                   value="@ModelOf(_editSub, p)"
+                                   @onchange="e => SetModel(_editSub, p, e.Value?.ToString())" />
+                        </div>
+                    }
+
+                    <div class="composer-actions">
+                        <button class="btn" @onclick="SaveSub">Save</button>
+                        <button class="link" @onclick="() => _editSub = null">Close</button>
+                    </div>
+                </div>
+            }
+        }
+        else if (_tab == "cast")
+        {
+            <div class="side-card admin-section">
+                <div class="side-title">Peer groups</div>
+                @foreach (var g in _groups)
+                {
+                    <div class="admin-row">
+                        <span class="admin-name">@g.Slug</span>
+                        <span class="dim">@g.Name</span>
+                        <button class="link danger" @onclick="() => DeleteGroup(g.Slug)">Delete</button>
+                    </div>
+                }
+                <div class="admin-new">
+                    <input class="title-input" placeholder="new-slug" @bind="_newGroupSlug" />
+                    <input class="title-input" placeholder="Display Name" @bind="_newGroupName" />
+                    <button class="btn" @onclick="NewGroup">Add group</button>
+                </div>
+            </div>
+
+            <div class="side-card admin-section">
+                <div class="side-title">Figures (@_figures.Count)</div>
+                @foreach (var f in _figures.OrderBy(f => f.Name))
+                {
+                    <div class="admin-row">
+                        <span class="admin-name">@f.Name</span>
+                        <span class="dim">@(string.Join(", ", f.GroupIds))@(f.Enabled ? "" : " · benched")</span>
+                        <button class="link" @onclick="() => EditFigure(f)">Edit</button>
+                        <button class="link danger" @onclick="() => DeleteFigure(f.Name)">Delete</button>
+                    </div>
+                }
+                <div class="admin-new">
+                    <input class="title-input" placeholder="New figure name" @bind="_newFigureName" />
+                    <button class="btn" @onclick="NewFigure">Add figure</button>
+                </div>
+            </div>
+
+            @if (_editFigure is not null)
+            {
+                <div class="side-card admin-section">
+                    <div class="side-title">Edit @_editFigure.Name</div>
+                    <textarea class="body-input" placeholder="Persona (how the AI writes in-voice)" @bind="_editFigure.Persona"></textarea>
+                    <label class="admin-check"><input type="checkbox" @bind="_editFigure.Enabled" /> Enabled (eligible for new AI picks)</label>
+                    <div class="side-sub dim">Peer groups</div>
+                    <div class="admin-checks">
+                        @foreach (var g in _groups)
+                        {
+                            <label class="admin-check">
+                                <input type="checkbox" checked="@_editFigure.GroupIds.Contains(g.Slug)"
+                                       @onchange="e => ToggleList(_editFigure.GroupIds, g.Slug, e)" /> @g.Name
+                            </label>
+                        }
+                    </div>
+                    <div class="composer-actions">
+                        <button class="btn" @onclick="SaveFigure">Save</button>
+                        <button class="link" @onclick="() => _editFigure = null">Close</button>
+                    </div>
+                </div>
+            }
+        }
+        else if (_tab == "mod")
+        {
+            <div class="side-card admin-section">
+                <div class="side-title">Banned users</div>
+                @if (_banned.Count == 0)
+                {
+                    <p class="dim">Nobody is banned.</p>
+                }
+                @foreach (var u in _banned)
+                {
+                    <div class="admin-row">
+                        <span class="admin-name">@(string.IsNullOrEmpty(u.DisplayName) ? u.Id : u.DisplayName)</span>
+                        <span class="dim">@u.Id · @u.BanReason</span>
+                        <button class="link" @onclick="() => Unban(u.Id)">Unban</button>
+                    </div>
+                }
+                <div class="admin-new">
+                    <input class="title-input" placeholder="user id (provider:sub)" @bind="_banUserId" />
+                    <input class="title-input" placeholder="reason" @bind="_banReason" />
+                    <button class="btn" @onclick="Ban">Ban</button>
+                </div>
+            </div>
+
+            <div class="side-card admin-section">
+                <div class="side-title">Recent posts</div>
+                @foreach (var p in _recent)
+                {
+                    <div class="admin-row">
+                        <a class="admin-name" href="@($"p/{p.Id}")">@(string.IsNullOrWhiteSpace(p.Title) ? "(untitled)" : p.Title)</a>
+                        <span class="dim">r/@p.Community · @p.AuthorName · @p.Replies.Count comments</span>
+                        <button class="link danger" @onclick="() => DeletePost(p.Id)">Delete</button>
+                    </div>
+                }
+            </div>
+
+            <div class="side-card admin-section">
+                <div class="side-title">Moderation log</div>
+                @foreach (var m in _modLog.Take(30))
+                {
+                    <div class="admin-row">
+                        <span class="dim">@m.CreatedUtc.ToString("MM-dd HH:mm") · @m.TargetKind · @m.Verdict/@m.Action</span>
+                        <span class="admin-snippet">@m.ContentSnippet</span>
+                    </div>
+                }
+            </div>
+        }
+        else if (_tab == "ai")
+        {
+            <div class="side-card admin-section">
+                <div class="side-title">AI feed control</div>
+                <label class="admin-check"><input type="checkbox" @bind="_settings.AutoPosterPaused" /> Pause the hourly character auto-poster</label>
+                <label class="admin-check"><input type="checkbox" @bind="_settings.AutoRepliesPaused" /> Pause background auto-replies</label>
+                <div class="composer-actions"><button class="btn" @onclick="SaveSettings">Save</button></div>
+            </div>
+
+            <div class="side-card admin-section">
+                <div class="side-title">Seed a post</div>
+                <div class="admin-new">
+                    <select class="sub-select" @bind="_seedFigure">
+                        <option value="">figure...</option>
+                        @foreach (var f in _figures.OrderBy(f => f.Name))
+                        {
+                            <option value="@f.Name">@f.Name</option>
+                        }
+                    </select>
+                    <select class="sub-select" @bind="_seedSub">
+                        @foreach (var c in _subs)
+                        {
+                            <option value="@c.Slug">r/@c.Name</option>
+                        }
+                    </select>
+                    <button class="btn" @onclick="Seed" disabled="@_seeding">@(_seeding ? "Seeding..." : "Seed")</button>
+                </div>
+            </div>
+
+            @if (_stats is not null)
+            {
+                <div class="side-card admin-section">
+                    <div class="side-title">Stats</div>
+                    <div class="admin-stats">
+                        <span>Posts: <b>@_stats.Posts</b></span>
+                        <span>Comments: <b>@_stats.Comments</b></span>
+                        <span>Human: <b>@_stats.HumanComments</b></span>
+                        <span>AI: <b>@_stats.AiComments</b></span>
+                        <span>Banned: <b>@_stats.BannedUsers</b></span>
+                        <span>Figures: <b>@_stats.Figures</b></span>
+                        <span>Subs: <b>@_stats.Communities</b></span>
+                        <span>Providers: <b>@string.Join(", ", _stats.Providers)</b></span>
+                    </div>
+                </div>
+            }
+        }
+    }
+</div>
+
+@code {
+    private static readonly (string key, string label)[] _tabs =
+        { ("subs", "Subs"), ("cast", "Groups & Figures"), ("mod", "Moderation"), ("ai", "AI Feed") };
+    private static readonly AiProvider[] _providers =
+        { AiProvider.Claude, AiProvider.OpenAI, AiProvider.Grok, AiProvider.HuggingFace };
+
+    private MeInfo? _me;
+    private bool _loading = true;
+    private string _tab = "subs";
+    private string _status = "";
+
+    private List<Community> _subs = new();
+    private List<PeerGroup> _groups = new();
+    private List<Figure> _figures = new();
+    private List<User> _banned = new();
+    private List<Post> _recent = new();
+    private List<ModerationLog> _modLog = new();
+    private AppSettings _settings = new();
+    private AdminStats? _stats;
+
+    private Community? _editSub;
+    private Figure? _editFigure;
+    private string? _newSubSlug, _newSubName, _newGroupSlug, _newGroupName, _newFigureName;
+    private string? _banUserId, _banReason;
+    private string _seedFigure = "", _seedSub = "allofhistory";
+    private bool _seeding;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { _me = await Api.GetMeAsync(); } catch { }
+        if (_me is { IsAdmin: true }) await LoadAll();
+        _loading = false;
+    }
+
+    private async Task LoadAll()
+    {
+        try
+        {
+            _subs = await Api.AdminGetCommunitiesAsync();
+            _groups = await Api.AdminGetPeerGroupsAsync();
+            _figures = await Api.AdminGetFiguresAsync();
+            _banned = await Api.AdminGetBannedAsync();
+            _recent = await Api.GetFeedAsync("new", 15);
+            _modLog = await Api.AdminGetModerationLogAsync(50);
+            _settings = await Api.AdminGetSettingsAsync();
+            _stats = await Api.AdminGetStatsAsync();
+        }
+        catch { _status = "Couldn't load admin data."; }
+    }
+
+    private void SetTab(string tab) { _tab = tab; _status = ""; }
+
+    private static void ToggleList(List<string> list, string slug, ChangeEventArgs e)
+    {
+        var on = e.Value is bool b && b;
+        if (on && !list.Contains(slug)) list.Add(slug);
+        if (!on) list.Remove(slug);
+    }
+
+    // --- Subs ---
+    private void EditSub(Community c) => _editSub = new Community
+    {
+        Slug = c.Slug, Name = c.Name, Description = c.Description, Enabled = c.Enabled,
+        GroupIds = new List<string>(c.GroupIds),
+        Models = c.Models.Select(m => new AgentModel { Provider = m.Provider, ModelId = m.ModelId }).ToList()
+    };
+
+    private static string ModelOf(Community c, AiProvider p) => c.ResolveModel(p) ?? "";
+
+    private static void SetModel(Community c, AiProvider p, string? modelId)
+    {
+        c.Models.RemoveAll(m => m.Provider == p);
+        if (!string.IsNullOrWhiteSpace(modelId))
+            c.Models.Add(new AgentModel { Provider = p, ModelId = modelId.Trim() });
+    }
+
+    private async Task SaveSub()
+    {
+        if (_editSub is null) return;
+        var res = await Api.AdminSaveCommunityAsync(_editSub);
+        _status = res.IsSuccessStatusCode ? $"Saved r/{_editSub.Slug}." : "Save failed.";
+        if (res.IsSuccessStatusCode) { _editSub = null; _subs = await Api.AdminGetCommunitiesAsync(); }
+    }
+
+    private async Task NewSub()
+    {
+        if (string.IsNullOrWhiteSpace(_newSubSlug) || string.IsNullOrWhiteSpace(_newSubName)) { _status = "Slug and name are required."; return; }
+        var slug = _newSubSlug.Trim().ToLowerInvariant();
+        var res = await Api.AdminSaveCommunityAsync(new Community { Slug = slug, Name = _newSubName.Trim() });
+        _status = res.IsSuccessStatusCode ? $"Created r/{slug}." : "Create failed.";
+        if (res.IsSuccessStatusCode) { _newSubSlug = _newSubName = null; _subs = await Api.AdminGetCommunitiesAsync(); }
+    }
+
+    private async Task DeleteSub(string slug)
+    {
+        var res = await Api.AdminDeleteCommunityAsync(slug);
+        _status = res.IsSuccessStatusCode ? $"Deleted r/{slug}." : "Delete failed.";
+        _subs = await Api.AdminGetCommunitiesAsync();
+    }
+
+    // --- Cast ---
+    private async Task NewGroup()
+    {
+        if (string.IsNullOrWhiteSpace(_newGroupSlug) || string.IsNullOrWhiteSpace(_newGroupName)) { _status = "Slug and name are required."; return; }
+        var res = await Api.AdminSavePeerGroupAsync(new PeerGroup { Slug = _newGroupSlug.Trim().ToLowerInvariant(), Name = _newGroupName.Trim() });
+        _status = res.IsSuccessStatusCode ? "Group added." : "Create failed.";
+        if (res.IsSuccessStatusCode) { _newGroupSlug = _newGroupName = null; _groups = await Api.AdminGetPeerGroupsAsync(); }
+    }
+
+    private async Task DeleteGroup(string slug)
+    {
+        var res = await Api.AdminDeletePeerGroupAsync(slug);
+        _status = res.IsSuccessStatusCode ? "Group deleted." : "Delete failed.";
+        _groups = await Api.AdminGetPeerGroupsAsync();
+    }
+
+    private void EditFigure(Figure f) => _editFigure = new Figure
+    {
+        Name = f.Name, Persona = f.Persona, Enabled = f.Enabled, GroupIds = new List<string>(f.GroupIds)
+    };
+
+    private async Task SaveFigure()
+    {
+        if (_editFigure is null) return;
+        if (string.IsNullOrWhiteSpace(_editFigure.Persona)) { _status = "Persona is required."; return; }
+        var res = await Api.AdminSaveFigureAsync(_editFigure);
+        _status = res.IsSuccessStatusCode ? $"Saved {_editFigure.Name}." : "Save failed.";
+        if (res.IsSuccessStatusCode) { _editFigure = null; _figures = await Api.AdminGetFiguresAsync(); }
+    }
+
+    private void NewFigure()
+    {
+        if (string.IsNullOrWhiteSpace(_newFigureName)) { _status = "Name is required."; return; }
+        _editFigure = new Figure { Name = _newFigureName.Trim(), Persona = "" };
+        _newFigureName = null;
+    }
+
+    private async Task DeleteFigure(string name)
+    {
+        var res = await Api.AdminDeleteFigureAsync(name);
+        _status = res.IsSuccessStatusCode ? $"Deleted {name}." : "Delete failed.";
+        _figures = await Api.AdminGetFiguresAsync();
+    }
+
+    // --- Moderation ---
+    private async Task Ban()
+    {
+        if (string.IsNullOrWhiteSpace(_banUserId)) { _status = "User id is required."; return; }
+        var res = await Api.AdminBanAsync(_banUserId.Trim(), null, _banReason);
+        _status = res.IsSuccessStatusCode ? "User banned." : "Ban failed.";
+        if (res.IsSuccessStatusCode) { _banUserId = _banReason = null; _banned = await Api.AdminGetBannedAsync(); }
+    }
+
+    private async Task Unban(string userId)
+    {
+        var res = await Api.AdminUnbanAsync(userId);
+        _status = res.IsSuccessStatusCode ? "User unbanned." : "Unban failed.";
+        _banned = await Api.AdminGetBannedAsync();
+    }
+
+    private async Task DeletePost(Guid id)
+    {
+        var res = await Api.AdminDeletePostAsync(id);
+        _status = res.IsSuccessStatusCode ? "Post deleted." : "Delete failed.";
+        _recent = await Api.GetFeedAsync("new", 15);
+    }
+
+    // --- AI feed ---
+    private async Task SaveSettings()
+    {
+        var res = await Api.AdminSaveSettingsAsync(_settings);
+        _status = res.IsSuccessStatusCode ? "Settings saved." : "Save failed.";
+        _stats = await Api.AdminGetStatsAsync();
+    }
+
+    private async Task Seed()
+    {
+        if (string.IsNullOrEmpty(_seedFigure)) { _status = "Pick a figure."; return; }
+        _seeding = true;
+        var res = await Api.AdminSeedAsync(_seedFigure, _seedSub);
+        _status = res.IsSuccessStatusCode ? $"Seeded a post by {_seedFigure} in r/{_seedSub}." : "Seed failed (check providers).";
+        _seeding = false;
+        _stats = await Api.AdminGetStatsAsync();
+    }
+}

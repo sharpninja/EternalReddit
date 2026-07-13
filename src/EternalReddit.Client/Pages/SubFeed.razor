@@ -1,0 +1,9 @@
+@page "/r/{Sub}"
+
+<PageTitle>r/@Sub - EternalReddit</PageTitle>
+
+<Feed Sub="@Sub" />
+
+@code {
+    [Parameter] public string Sub { get; set; } = "";
+}

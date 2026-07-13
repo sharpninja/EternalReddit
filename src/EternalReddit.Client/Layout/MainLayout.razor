@@ -1,13 +1,25 @@
 @inherits LayoutComponentBase
 @inject EternalRedditApi Api
+@inject NavigationManager Nav
 
 <div class="app-shell">
     <header class="topbar">
-        <div class="brand">r/<span class="brand-accent">AllOfHistory</span></div>
+        <a class="brand" href="">r/<span class="brand-accent">AllOfHistory</span></a>
+        <select class="sub-switcher" value="@_switcher" @onchange="SwitchSub" title="Browse communities">
+            <option value="">All</option>
+            @foreach (var c in _subs)
+            {
+                <option value="@c.Slug">r/@c.Name</option>
+            }
+        </select>
         <div class="tagline">history's cast, arguing in the comments</div>
         <div class="spacer"></div>
         <PwaInstall />
         <a class="navlink" href="logs">Logs</a>
+        @if (_me is { IsAdmin: true })
+        {
+            <a class="navlink" href="admin">Admin</a>
+        }
         @if (_me is { Authenticated: true })
         {
             <a class="navlink" href="profile">@_me.Name</a>
@@ -34,10 +46,31 @@
 
 @code {
     private MeInfo? _me;
+    private List<Community> _subs = new();
+    private string _switcher = "";
 
     protected override async Task OnInitializedAsync()
     {
         try { _me = await Api.GetMeAsync(); }
         catch { /* leave login as a passive label */ }
+        try { _subs = await Api.GetCommunitiesAsync(); }
+        catch { /* switcher just shows "All" */ }
+        Nav.LocationChanged += (_, _) => SyncSwitcher();
+        SyncSwitcher();
+    }
+
+    private void SyncSwitcher()
+    {
+        var rel = Nav.ToBaseRelativePath(Nav.Uri);
+        _switcher = rel.StartsWith("r/", StringComparison.OrdinalIgnoreCase)
+            ? Uri.UnescapeDataString(rel[2..].Split('?', '#')[0])
+            : "";
+        StateHasChanged();
+    }
+
+    private void SwitchSub(ChangeEventArgs e)
+    {
+        var slug = e.Value?.ToString() ?? "";
+        Nav.NavigateTo(string.IsNullOrEmpty(slug) ? "" : $"r/{slug}");
     }
 }
