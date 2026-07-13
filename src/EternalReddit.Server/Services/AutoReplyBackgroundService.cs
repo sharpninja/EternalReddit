@@ -100,11 +100,11 @@ public sealed class AutoReplyBackgroundService : BackgroundService
             chosen = candidates[Math.Clamp(pick - 1, 0, candidates.Count - 1)];
         }
 
-        var reply = await _service.GenerateReplyInto(chosen, provider, ct);
+        // GenerateReplyInto commits atomically against the freshest document; our
+        // `chosen` copy is only used for its id and menu context.
+        var reply = await _service.GenerateReplyInto(chosen, provider, background: true, ct: ct);
         if (reply is null) return;
 
-        reply.IsBackground = true;
-        _posts.Update(chosen);
         await _notifier.FeedChangedAsync();
     }
 

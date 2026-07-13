@@ -45,7 +45,7 @@ public interface IPostService
     Task<AddReplyResult> AddUserReplyAsync(AddReplyRequest request, CancellationToken ct = default);
 
     /// <summary>Generate and thread one approved-figure reply into a post; returns it, or null if blocked/failed.</summary>
-    Task<Reply?> GenerateReplyInto(Post post, AiProvider provider, CancellationToken ct = default);
+    Task<Reply?> GenerateReplyInto(Post post, AiProvider provider, bool background = false, CancellationToken ct = default);
     VoteResult? Vote(Guid postId, Guid? replyId, string userId, VoteKind kind);
     int Share(Guid postId, Guid? replyId);
     IReadOnlyList<Post> GetRecent(int count = 50);
@@ -64,6 +64,12 @@ public interface IPostService
 public sealed class PostService : IPostService
 {
     private const int ReplyCount = 5;
+
+    // Serializes every read-modify-write of a post document. Writers (user actions,
+    // the reply thread, the background services) otherwise race on independent
+    // deserialized copies and the last save wins, silently dropping replies
+    // (this is what kept eating the scripted Columbus comment).
+    private readonly SemaphoreSlim _postWrite = new(1, 1);
 
     private readonly IPostStore _posts;
     private readonly IUserStore _users;
@@ -176,10 +182,9 @@ public sealed class PostService : IPostService
             Community = community.Slug,
             CreatedUtc = DateTime.UtcNow
         };
-        _posts.Add(post);
-        _logger.LogInformation("Post created by {Author} in {Sub}", string.IsNullOrWhiteSpace(post.AuthorName) ? "anonymous" : post.AuthorName, community.Slug);
 
-        // The running gag: Christopher Columbus is always first.
+        // The running gag: Christopher Columbus is always first - inserted BEFORE the
+        // post is persisted, so no version of the document ever exists without him.
         post.Replies.Insert(0, new Reply
         {
             Figure = "Christopher Columbus",
@@ -187,11 +192,12 @@ public sealed class PostService : IPostService
             Body = "First!",
             CreatedUtc = DateTime.UtcNow
         });
+        _posts.Add(post);
+        _logger.LogInformation("Post created by {Author} in {Sub}", string.IsNullOrWhiteSpace(post.AuthorName) ? "anonymous" : post.AuthorName, community.Slug);
 
         await GenerateReplyThreadAsync(post, ct);
-        _posts.Update(post); // persist Columbus even when no AI providers are configured
         await _notifier.FeedChangedAsync();
-        return CreatePostResult.Created(post);
+        return CreatePostResult.Created(_posts.Get(post.Id) ?? post);
     }
 
     public async Task<Post?> CreateSystemPostAsync(string communitySlug, string authorName, string? title, string body, CancellationToken ct = default)
@@ -212,9 +218,6 @@ public sealed class PostService : IPostService
             Community = ResolveCommunity(communitySlug).Slug,
             CreatedUtc = DateTime.UtcNow
         };
-        _posts.Add(post);
-        _logger.LogInformation("Character post created by {Author}", authorName);
-
         post.Replies.Insert(0, new Reply
         {
             Figure = "Christopher Columbus",
@@ -222,11 +225,12 @@ public sealed class PostService : IPostService
             Body = "First!",
             CreatedUtc = DateTime.UtcNow
         });
+        _posts.Add(post);
+        _logger.LogInformation("Character post created by {Author}", authorName);
 
         await GenerateReplyThreadAsync(post, ct);
-        _posts.Update(post);
         await _notifier.FeedChangedAsync();
-        return post;
+        return _posts.Get(post.Id) ?? post;
     }
 
     public async Task<AddReplyResult> AddUserReplyAsync(AddReplyRequest request, CancellationToken ct = default)
@@ -249,11 +253,6 @@ public sealed class PostService : IPostService
                 return AddReplyResult.Blocked(outcome.Verdict.ToString());
         }
 
-        var post = _posts.Get(request.PostId);
-        if (post is null) return AddReplyResult.PostNotFound();
-        if (request.ParentReplyId is { } pid && post.Replies.All(r => r.Id != pid))
-            return AddReplyResult.ParentNotFound();
-
         var reply = new Reply
         {
             Figure = "",                        // humans keep an empty figure (out of the leaderboard)
@@ -264,8 +263,20 @@ public sealed class PostService : IPostService
             ParentReplyId = request.ParentReplyId,
             CreatedUtc = DateTime.UtcNow
         };
-        post.Replies.Add(reply);
-        _posts.Update(post);
+
+        // Validate + append against the freshest document under the write lock.
+        await _postWrite.WaitAsync(ct);
+        try
+        {
+            var post = _posts.Get(request.PostId);
+            if (post is null) return AddReplyResult.PostNotFound();
+            if (request.ParentReplyId is { } pid && post.Replies.All(r => r.Id != pid))
+                return AddReplyResult.ParentNotFound();
+            post.Replies.Add(reply);
+            _posts.Update(post);
+        }
+        finally { _postWrite.Release(); }
+
         _logger.LogInformation("{User} commented on a post", request.AuthorName);
         await _notifier.FeedChangedAsync();
         return AddReplyResult.Added(reply);
@@ -275,6 +286,16 @@ public sealed class PostService : IPostService
     {
         if (string.IsNullOrWhiteSpace(userId)) return null;
 
+        _postWrite.Wait();
+        try
+        {
+            return VoteLocked(postId, replyId, userId, kind);
+        }
+        finally { _postWrite.Release(); }
+    }
+
+    private VoteResult? VoteLocked(Guid postId, Guid? replyId, string userId, VoteKind kind)
+    {
         var post = _posts.Get(postId);
         if (post is null) return null;
 
@@ -351,23 +372,28 @@ public sealed class PostService : IPostService
 
     public int Share(Guid postId, Guid? replyId)
     {
-        var post = _posts.Get(postId);
-        if (post is null) return -1;
-
-        int count;
-        if (replyId is null)
+        _postWrite.Wait();
+        try
         {
-            count = ++post.ShareCount;
-        }
-        else
-        {
-            var reply = post.Replies.FirstOrDefault(r => r.Id == replyId.Value);
-            if (reply is null) return -1;
-            count = ++reply.ShareCount;
-        }
+            var post = _posts.Get(postId);
+            if (post is null) return -1;
 
-        _posts.Update(post);
-        return count;
+            int count;
+            if (replyId is null)
+            {
+                count = ++post.ShareCount;
+            }
+            else
+            {
+                var reply = post.Replies.FirstOrDefault(r => r.Id == replyId.Value);
+                if (reply is null) return -1;
+                count = ++reply.ShareCount;
+            }
+
+            _posts.Update(post);
+            return count;
+        }
+        finally { _postWrite.Release(); }
     }
 
     private async Task GenerateReplyThreadAsync(Post post, CancellationToken ct)
@@ -376,13 +402,15 @@ public sealed class PostService : IPostService
 
         var rotation = new RoundRobinSelector(_generator.Available);
         for (var i = 0; i < ReplyCount; i++)
-            await GenerateReplyInto(post, rotation.Next(), ct);
-
-        _posts.Update(post);
+            await GenerateReplyInto(post, rotation.Next(), background: false, ct);
     }
 
-    public async Task<Reply?> GenerateReplyInto(Post post, AiProvider provider, CancellationToken ct = default)
+    public async Task<Reply?> GenerateReplyInto(Post post, AiProvider provider, bool background = false, CancellationToken ct = default)
     {
+        // Work from the freshest version for context: the caller's copy may be stale
+        // (the background service reads its own copy from the store).
+        post = _posts.Get(post.Id) ?? post;
+
         // Decide the parent first so the reply can address it with full branch context,
         // and pick the speaking figure from the sub's peer groups (never the model's choice).
         var community = ResolveCommunity(post.Community);
@@ -410,9 +438,11 @@ public sealed class PostService : IPostService
                 Model = _generator.ResolveModelId(provider, ctx.ModelId),
                 Body = body,
                 ParentReplyId = parent?.Id,
+                IsBackground = background,
                 CreatedUtc = DateTime.UtcNow
             };
-            post.Replies.Add(reply);
+            var committed = await CommitReplyAsync(post.Id, reply, ct);
+            if (!committed) return null;
             _logger.LogInformation("{Figure} replied to {Parent} via {Provider}", figure, parent?.Figure ?? "the post", provider);
             return reply;
         }
@@ -422,6 +452,27 @@ public sealed class PostService : IPostService
             _logger.LogError(ex, "Reply generation via {Provider} failed", provider);
             return null;
         }
+    }
+
+    /// <summary>
+    /// Atomically append a reply to the freshest version of the post. The slow AI
+    /// generation happens outside; only this re-fetch + save holds the write lock,
+    /// so concurrent writers can never overwrite each other's replies.
+    /// </summary>
+    private async Task<bool> CommitReplyAsync(Guid postId, Reply reply, CancellationToken ct)
+    {
+        await _postWrite.WaitAsync(ct);
+        try
+        {
+            var fresh = _posts.Get(postId);
+            if (fresh is null) return false; // post was deleted mid-generation
+            if (reply.ParentReplyId is { } pid && fresh.Replies.All(r => r.Id != pid))
+                reply.ParentReplyId = null; // parent vanished mid-generation: re-root
+            fresh.Replies.Add(reply);
+            _posts.Update(fresh);
+            return true;
+        }
+        finally { _postWrite.Release(); }
     }
 
     public bool DeletePost(Guid id)
@@ -437,17 +488,23 @@ public sealed class PostService : IPostService
 
     public bool DeleteReply(Guid postId, Guid replyId)
     {
-        var post = _posts.Get(postId);
-        if (post is null) return false;
-        var removed = post.Replies.RemoveAll(r => r.Id == replyId);
-        if (removed == 0) return false;
+        _postWrite.Wait();
+        try
+        {
+            var post = _posts.Get(postId);
+            if (post is null) return false;
+            var removed = post.Replies.RemoveAll(r => r.Id == replyId);
+            if (removed == 0) return false;
 
-        // Re-root children of the deleted comment so they stay visible.
-        var ids = post.Replies.Select(r => r.Id).ToHashSet();
-        foreach (var r in post.Replies)
-            if (r.ParentReplyId is { } pid && !ids.Contains(pid)) r.ParentReplyId = null;
+            // Re-root children of the deleted comment so they stay visible.
+            var ids = post.Replies.Select(r => r.Id).ToHashSet();
+            foreach (var r in post.Replies)
+                if (r.ParentReplyId is { } pid && !ids.Contains(pid)) r.ParentReplyId = null;
 
-        _posts.Update(post);
+            _posts.Update(post);
+        }
+        finally { _postWrite.Release(); }
+
         _logger.LogInformation("Admin deleted reply {ReplyId} from post {PostId}", replyId, postId);
         _ = _notifier.FeedChangedAsync();
         return true;
