@@ -359,6 +359,18 @@ html { font-size: 17px; }
 .model-chip { font-size: 0.72rem; }
 .navlink, .sort-tab { font-size: 0.85rem; }
 
+/* ---- tighter left edge, especially on phones ---- */
+.comment { gap: 5px; }
+.cmain { padding-left: 7px; }
+@media (max-width: 820px) {
+    .content { padding: 0 5px; margin: 10px auto; }
+    .post { padding: 8px 8px; gap: 6px; }
+    .comment { gap: 3px; margin-top: 8px; }
+    .cmain { padding-left: 5px; }
+    .pvote, .cvote { min-width: 0; }
+    .arrow { padding: 2px 1px; }
+}
+
 /* second row on each admin sub: the models in use */
 .admin-row-block { display: block; }
 .admin-row-main { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
