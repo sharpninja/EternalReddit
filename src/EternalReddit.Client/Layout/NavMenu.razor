@@ -1,0 +1,43 @@
+@namespace EternalReddit.Client.Layout
+
+<nav class="sidenav-inner">
+    <div class="sidenav-section">
+        <div class="sidenav-head">Communities</div>
+        <NavLink class="nav-item" href="" Match="NavLinkMatch.All">All</NavLink>
+        @foreach (var c in Subs)
+        {
+            <NavLink class="nav-item" href="@($"r/{c.Slug}")">r/@c.Name</NavLink>
+        }
+    </div>
+
+    <div class="sidenav-bottom">
+        <NavLink class="nav-item" href="logs">Logs</NavLink>
+        @if (Me is { Authenticated: true })
+        {
+            <NavLink class="nav-item" href="profile">@Me.Name</NavLink>
+            @if (Me.IsAdmin)
+            {
+                <NavLink class="nav-item" href="admin">Admin</NavLink>
+            }
+            <form method="post" action="/logout" class="nav-auth">
+                <button class="login" type="submit">Log out</button>
+            </form>
+        }
+        else if (Me is not null && Me.Providers.Length > 0)
+        {
+            @foreach (var p in Me.Providers)
+            {
+                <a class="login nav-auth" href="@($"/login/{p}")">Log in with @p</a>
+            }
+        }
+        else
+        {
+            <span class="dim nav-item" title="Set OAuth client IDs to enable login">Log in</span>
+        }
+    </div>
+</nav>
+
+@code {
+    [Parameter] public List<Community> Subs { get; set; } = new();
+    [Parameter] public MeInfo? Me { get; set; }
+}

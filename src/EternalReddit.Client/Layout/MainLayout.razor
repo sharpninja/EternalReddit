@@ -2,75 +2,44 @@
 @inject EternalRedditApi Api
 @inject NavigationManager Nav
 
-<div class="app-shell">
-    <header class="topbar">
-        <a class="brand" href="">r/<span class="brand-accent">AllOfHistory</span></a>
-        <select class="sub-switcher" value="@_switcher" @onchange="SwitchSub" title="Browse communities">
-            <option value="">All</option>
-            @foreach (var c in _subs)
-            {
-                <option value="@c.Slug">r/@c.Name</option>
-            }
-        </select>
-        <div class="tagline">history's cast, arguing in the comments</div>
-        <div class="spacer"></div>
-        <PwaInstall />
-        <a class="navlink" href="logs">Logs</a>
-        @if (_me is { IsAdmin: true })
-        {
-            <a class="navlink" href="admin">Admin</a>
-        }
-        @if (_me is { Authenticated: true })
-        {
-            <a class="navlink" href="profile">@_me.Name</a>
-            <form method="post" action="/logout" class="inline-form">
-                <button class="login" type="submit">Log out</button>
-            </form>
-        }
-        else if (_me is not null && _me.Providers.Length > 0)
-        {
-            @foreach (var p in _me.Providers)
-            {
-                <a class="login" href="@($"/login/{p}")">@p</a>
-            }
-        }
-        else
-        {
-            <span class="dim" title="Set OAuth client IDs to enable login">Log in</span>
-        }
-    </header>
-    <main class="content">
-        @Body
-    </main>
+<div class="page">
+    <aside class="sidenav @(_navOpen ? "open" : "")">
+        <NavMenu Subs="_subs" Me="_me" />
+    </aside>
+    @if (_navOpen)
+    {
+        <div class="sidenav-backdrop" @onclick="() => _navOpen = false"></div>
+    }
+    <div class="main-col">
+        <header class="topbar">
+            <button class="nav-toggle" title="Menu" @onclick="() => _navOpen = !_navOpen">&#9776;</button>
+            <a class="brand" href="">r/<span class="brand-accent">AllOfHistory</span></a>
+            <div class="tagline">history's cast, arguing in the comments</div>
+            <div class="spacer"></div>
+            <PwaInstall />
+        </header>
+        <main class="content">
+            @Body
+        </main>
+    </div>
 </div>
 
 @code {
     private MeInfo? _me;
     private List<Community> _subs = new();
-    private string _switcher = "";
+    private bool _navOpen;
 
     protected override async Task OnInitializedAsync()
     {
+        // Close the mobile menu whenever navigation happens (a nav item was clicked).
+        Nav.LocationChanged += (_, _) =>
+        {
+            _navOpen = false;
+            _ = InvokeAsync(StateHasChanged);
+        };
         try { _me = await Api.GetMeAsync(); }
-        catch { /* leave login as a passive label */ }
+        catch { /* login stays a passive label */ }
         try { _subs = await Api.GetCommunitiesAsync(); }
-        catch { /* switcher just shows "All" */ }
-        Nav.LocationChanged += (_, _) => SyncSwitcher();
-        SyncSwitcher();
-    }
-
-    private void SyncSwitcher()
-    {
-        var rel = Nav.ToBaseRelativePath(Nav.Uri);
-        _switcher = rel.StartsWith("r/", StringComparison.OrdinalIgnoreCase)
-            ? Uri.UnescapeDataString(rel[2..].Split('?', '#')[0])
-            : "";
-        StateHasChanged();
-    }
-
-    private void SwitchSub(ChangeEventArgs e)
-    {
-        var slug = e.Value?.ToString() ?? "";
-        Nav.NavigateTo(string.IsNullOrEmpty(slug) ? "" : $"r/{slug}");
+        catch { /* nav shows just "All" */ }
     }
 }
