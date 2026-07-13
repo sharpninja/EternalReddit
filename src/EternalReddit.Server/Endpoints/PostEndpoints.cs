@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using EternalReddit.Server.Auth;
 using EternalReddit.Server.Data;
 using EternalReddit.Server.Services;
 using EternalReddit.Server.Services.Ai;
@@ -115,7 +116,7 @@ public static class PostEndpoints
             var draft = await gen.GeneratePostAsync(figure, roster.Persona(figure), provider, ctx, ct);
             var post = await svc.CreateSystemPostAsync(slug, figure, draft.Title, draft.Body, ct);
             return post is null ? Results.UnprocessableEntity("Blocked by moderation.") : Results.Ok(post);
-        });
+        }).RequireAuthorization(AdminAccess.PolicyName);
 
         return app;
     }

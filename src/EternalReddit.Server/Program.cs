@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using EternalReddit.Server.Auth;
 using EternalReddit.Server.Data;
 using EternalReddit.Server.Data.Seeding;
 using EternalReddit.Server.Endpoints;
@@ -169,7 +170,9 @@ if (!string.IsNullOrWhiteSpace(githubClientId))
     });
 }
 
-builder.Services.AddAuthorization();
+var adminEmail = AdminAccess.ConfiguredEmail(builder.Configuration);
+builder.Services.AddAuthorization(options =>
+    options.AddPolicy(AdminAccess.PolicyName, p => p.RequireAssertion(ctx => AdminAccess.IsAdmin(ctx.User, adminEmail))));
 
 // Behind ngrok (or any reverse proxy): honor X-Forwarded-Proto/Host so the
 // OIDC handler builds redirect URIs with the public https host
@@ -233,17 +236,18 @@ app.MapPost("/logout", async (HttpContext http) =>
     return Results.Redirect("/");
 });
 
-app.MapGet("/api/me", async (HttpContext http, IAuthenticationSchemeProvider schemes) =>
+app.MapGet("/api/me", async (HttpContext http, IAuthenticationSchemeProvider schemes, IConfiguration config) =>
 {
     var providers = (await schemes.GetAllSchemesAsync())
-        .Where(s => s.Name != "Cookies")
+        .Where(s => s.Name != "Cookies" && s.Name != "Test")
         .Select(s => s.Name)
         .ToArray();
     return Results.Ok(new
     {
         authenticated = http.User.Identity?.IsAuthenticated ?? false,
         name = http.User.Identity?.Name,
-        providers
+        providers,
+        isAdmin = AdminAccess.IsAdmin(http.User, AdminAccess.ConfiguredEmail(config))
     });
 });
 

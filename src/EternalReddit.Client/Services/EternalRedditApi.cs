@@ -19,7 +19,7 @@ public sealed class EternalRedditApi
     }
 
     public async Task<MeInfo> GetMeAsync()
-        => await _http.GetFromJsonAsync<MeInfo>("api/me") ?? new MeInfo(false, null, Array.Empty<string>());
+        => await _http.GetFromJsonAsync<MeInfo>("api/me") ?? new MeInfo(false, null, Array.Empty<string>(), false);
 
     public async Task<List<Post>?> GetMyPostsAsync()
     {
@@ -70,5 +70,5 @@ public sealed class EternalRedditApi
 }
 
 /// <summary>Current auth state plus the OAuth providers the server has configured.</summary>
-public sealed record MeInfo(bool Authenticated, string? Name, string[] Providers);
+public sealed record MeInfo(bool Authenticated, string? Name, string[] Providers, bool IsAdmin);
 
