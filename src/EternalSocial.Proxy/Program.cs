@@ -28,8 +28,10 @@ var googleConfigured = !string.IsNullOrWhiteSpace(googleClientId);
 var auth = builder.Services
     .AddAuthentication(o =>
     {
+        // The cookie handler always mediates challenges: APIs get clean 401s and
+        // pages bounce to /login, which explicitly challenges Google.
         o.DefaultScheme = "Cookies";
-        o.DefaultChallengeScheme = googleConfigured ? "Google" : "Cookies";
+        o.DefaultChallengeScheme = "Cookies";
     })
     .AddCookie("Cookies", o =>
     {
@@ -123,13 +125,16 @@ state.Reload(store);
 var proxyConfig = app.Services.GetRequiredService<InMemoryConfigProvider>();
 ApplyRoutes(state, proxyConfig);
 
-// Behind ngrok: honor the tunnel's forwarded headers.
-app.UseForwardedHeaders(new ForwardedHeadersOptions
+// Behind ngrok: honor the tunnel's forwarded headers so OIDC builds https
+// redirect URIs. The allow-lists must be explicitly CLEARED (an empty collection
+// initializer keeps the loopback defaults and silently rejects the tunnel).
+var forwarded = new ForwardedHeadersOptions
 {
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost,
-    KnownIPNetworks = { },
-    KnownProxies = { }
-});
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost
+};
+forwarded.KnownIPNetworks.Clear();
+forwarded.KnownProxies.Clear();
+app.UseForwardedHeaders(forwarded);
 
 app.UseAuthentication();
 app.UseAuthorization();
