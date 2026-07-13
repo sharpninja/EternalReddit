@@ -31,7 +31,7 @@ Scope: layer-1+
 ## TR-CORE-DATA-001
 
 **LiteDB persistence conventions** — Single-file LiteDB store with BsonMapper EmptyStringToNull=false, DateTime as UTC ticks, fluent string-id mapping for Community/PeerGroup/Figure (Shared models stay attribute-free), and an index on Post.Community. Seeding is per-id insert-if-absent so releases add defaults without clobbering admin edits.
-**Covered by:** FR: FR-AI-001, FR-AI-002, FR-AI-004, FR-AI-007, FR-AI-008, FR-CORE-001, FR-CORE-002, FR-CORE-005, FR-CORE-006, FR-CORE-008, FR-CORE-015, FR-UI-001, FR-UI-002, FR-UI-003, FR-UI-004; TEST: TEST-CORE-001, TEST-AI-001, TEST-CORE-004
+**Covered by:** FR: FR-AI-001, FR-AI-002, FR-AI-004, FR-AI-007, FR-AI-008, FR-AI-010, FR-CORE-001, FR-CORE-002, FR-CORE-005, FR-CORE-006, FR-CORE-008, FR-CORE-015, FR-UI-001, FR-UI-002, FR-UI-003, FR-UI-004; TEST: TEST-CORE-001, TEST-AI-001, TEST-CORE-004
 **Status:** completed
 Scope: layer-1+
 

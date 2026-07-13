@@ -13,6 +13,7 @@ Traceability policy: see `Requirements-Traceability-Policy.md`.
 | FR-AI-007 | Tracked | Functional-Requirements.md |
 | FR-AI-008 | Tracked | Functional-Requirements.md |
 | FR-AI-009 | Tracked | Functional-Requirements.md |
+| FR-AI-010 | Tracked | Functional-Requirements.md |
 | FR-CORE-001 | Tracked | Functional-Requirements.md |
 | FR-CORE-002 | Tracked | Functional-Requirements.md |
 | FR-CORE-003 | Tracked | Functional-Requirements.md |
