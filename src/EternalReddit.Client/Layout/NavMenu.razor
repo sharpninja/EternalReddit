@@ -19,7 +19,8 @@
             {
                 <NavLink class="nav-item" href="admin">Admin</NavLink>
             }
-            <form method="post" action="/logout" class="nav-auth">
+            @* Relative action so the <base href> (path prefix behind the proxy) applies. *@
+            <form method="post" action="logout" class="nav-auth">
                 <button class="login" type="submit">Log out</button>
             </form>
         }
@@ -27,7 +28,7 @@
         {
             @foreach (var p in Me.Providers)
             {
-                <a class="login nav-auth" href="@($"/login/{p}")">Log in with @p</a>
+                <a class="login nav-auth" href="@($"login/{p}")">Log in with @p</a>
             }
         }
         else

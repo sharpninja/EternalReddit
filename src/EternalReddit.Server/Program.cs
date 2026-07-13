@@ -194,6 +194,13 @@ var app = builder.Build();
 // authentication, OIDC challenge).
 app.UseForwardedHeaders();
 
+// Behind the EternalSocial proxy the app is mounted under a prefix (e.g. /r).
+// UsePathBase strips it so routing/auth/static files all see root-relative paths
+// while generated URLs (OIDC redirect_uri, cookies) include the prefix.
+var pathBase = (builder.Configuration["PATH_BASE"] ?? "").TrimEnd('/');
+if (!string.IsNullOrEmpty(pathBase))
+    app.UsePathBase(pathBase);
+
 if (app.Environment.IsDevelopment())
 {
     var store = app.Services.GetRequiredService<IPostStore>();
@@ -263,9 +270,34 @@ app.MapGet("/api/me", async (HttpContext http, IAuthenticationSchemeProvider sch
     });
 });
 
-app.MapFallbackToFile("index.html", new StaticFileOptions
+// SPA assets that carry root-anchored URLs are rewritten for PATH_BASE at first
+// use: index.html (base href) via the fallback, the PWA manifest via /app.webmanifest.
+string? LoadWebRootAsset(string name)
 {
-    OnPrepareResponse = ctx => ctx.Context.Response.Headers.CacheControl = "no-cache"
+    var file = app.Environment.WebRootFileProvider.GetFileInfo(name);
+    if (!file.Exists) return null;
+    using var reader = new StreamReader(file.CreateReadStream());
+    return reader.ReadToEnd();
+}
+var rewrittenIndex = new Lazy<string?>(() =>
+    LoadWebRootAsset("index.html") is { } html ? EternalReddit.Server.PathBaseAssets.RewriteIndex(html, pathBase) : null);
+var rewrittenManifest = new Lazy<string?>(() =>
+    LoadWebRootAsset("manifest.webmanifest") is { } json ? EternalReddit.Server.PathBaseAssets.RewriteManifest(json, pathBase) : null);
+
+app.MapGet("/app.webmanifest", (HttpResponse res) =>
+{
+    res.Headers.CacheControl = "no-cache";
+    return rewrittenManifest.Value is { } manifest
+        ? Results.Content(manifest, "application/manifest+json")
+        : Results.NotFound();
+});
+
+app.MapFallback(async ctx =>
+{
+    if (rewrittenIndex.Value is null) { ctx.Response.StatusCode = StatusCodes.Status404NotFound; return; }
+    ctx.Response.ContentType = "text/html; charset=utf-8";
+    ctx.Response.Headers.CacheControl = "no-cache";
+    await ctx.Response.WriteAsync(rewrittenIndex.Value);
 });
 
 // Seed the default roster/communities (idempotent) BEFORE the purge, which validates
