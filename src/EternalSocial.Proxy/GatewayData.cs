@@ -59,15 +59,27 @@ public static class GatewaySeed
     public static void EnsureSeeded(IRouteStore store)
     {
         foreach (var route in Defaults())
-            if (store.Get(route.Prefix) is null)
+        {
+            var existing = store.Get(route.Prefix);
+            if (existing is null)
+            {
                 store.Upsert(route);
+            }
+            else if (existing.Upstream.Length == 0 && route.Upstream.Length > 0)
+            {
+                // A site launched since this database was seeded: fill the empty
+                // upstream with the new default. Never overwrites an admin-set value.
+                existing.Upstream = route.Upstream;
+                store.Upsert(existing);
+            }
+        }
     }
 
     public static IReadOnlyList<ProxyRoute> Defaults() => new ProxyRoute[]
     {
         new() { Prefix = "/r", Title = "EternalReadit", Description = "History's cast, arguing in the comments.", Upstream = "http://eternalreddit:8080", Enabled = true },
-        new() { Prefix = "/x", Title = "EternalX", Description = "Short takes from long-dead legends.", Upstream = "", Enabled = true },
-        new() { Prefix = "/d", Title = "EternalDiscord", Description = "Voice chat across the ages.", Upstream = "", Enabled = true },
+        new() { Prefix = "/x", Title = "EternalX", Description = "Short takes from long-dead legends.", Upstream = "http://eternalx:8080", Enabled = true },
+        new() { Prefix = "/d", Title = "EternalDiscord", Description = "Voice chat across the ages.", Upstream = "http://eternaldiscord:8080", Enabled = true },
     };
 }
 

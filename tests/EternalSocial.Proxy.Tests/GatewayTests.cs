@@ -67,14 +67,38 @@ public class RouteStoreTests
             var all = store.GetAll();
             Assert.Equal(3, all.Count);
             Assert.Equal("http://eternalreddit:8080", store.Get("/r")!.Upstream);
-            Assert.Equal("", store.Get("/x")!.Upstream);
+            Assert.Equal("http://eternalx:8080", store.Get("/x")!.Upstream);
+            Assert.Equal("http://eternaldiscord:8080", store.Get("/d")!.Upstream);
 
             // Admin edits survive re-seeding.
             var x = store.Get("/x")!;
-            x.Upstream = "http://eternalx:8080";
+            x.Upstream = "http://custom:9999";
             store.Upsert(x);
             GatewaySeed.EnsureSeeded(store);
-            Assert.Equal("http://eternalx:8080", store.Get("/x")!.Upstream);
+            Assert.Equal("http://custom:9999", store.Get("/x")!.Upstream);
+        }
+        finally { if (File.Exists(path)) File.Delete(path); }
+    }
+
+    [Fact]
+    public void Seeding_fills_an_empty_upstream_with_the_new_default_but_never_overwrites()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"eternalsocial-fill-{Guid.NewGuid():n}.db");
+        try
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?> { ["LITEDB_PATH"] = path }).Build();
+            using var db = new GatewayDb(config);
+            var store = new LiteDbRouteStore(db);
+
+            // Simulate a database from before the sites launched: /x exists with no upstream.
+            store.Upsert(new ProxyRoute { Prefix = "/x", Title = "EternalX", Upstream = "", Enabled = true });
+            store.Upsert(new ProxyRoute { Prefix = "/d", Title = "EternalDiscord", Upstream = "http://admin-set:1234", Enabled = true });
+
+            GatewaySeed.EnsureSeeded(store);
+
+            Assert.Equal("http://eternalx:8080", store.Get("/x")!.Upstream);      // filled
+            Assert.Equal("http://admin-set:1234", store.Get("/d")!.Upstream);     // untouched
         }
         finally { if (File.Exists(path)) File.Delete(path); }
     }
