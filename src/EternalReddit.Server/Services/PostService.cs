@@ -407,6 +407,7 @@ public sealed class PostService : IPostService
             {
                 Figure = figure,
                 Provider = provider,
+                Model = _generator.ResolveModelId(provider, ctx.ModelId),
                 Body = body,
                 ParentReplyId = parent?.Id,
                 CreatedUtc = DateTime.UtcNow

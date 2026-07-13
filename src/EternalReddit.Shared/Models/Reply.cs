@@ -11,6 +11,9 @@ public sealed class Reply
     /// <summary>Which AI provider generated this comment.</summary>
     public AiProvider Provider { get; set; }
 
+    /// <summary>The model that actually generated it (sub override or provider default); null for scripted/human.</summary>
+    public string? Model { get; set; }
+
     public string Body { get; set; } = "";
 
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;

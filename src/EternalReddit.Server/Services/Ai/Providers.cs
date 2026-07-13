@@ -21,6 +21,7 @@ public sealed class ClaudeProvider : IAiProvider
 
     public AiProvider Kind => AiProvider.Claude;
     public bool IsConfigured => !string.IsNullOrWhiteSpace(_key);
+    public string DefaultModel => _model;
 
     public async Task<string> CompleteAsync(string system, string user, int maxTokens, string? model = null, CancellationToken ct = default)
     {
@@ -64,6 +65,7 @@ public abstract class OpenAiCompatibleProvider : IAiProvider
 
     public abstract AiProvider Kind { get; }
     public bool IsConfigured => !string.IsNullOrWhiteSpace(_key);
+    public string DefaultModel => _model;
 
     public async Task<string> CompleteAsync(string system, string user, int maxTokens, string? model = null, CancellationToken ct = default)
     {
@@ -122,6 +124,7 @@ public sealed class HuggingFaceProvider : IAiProvider
 
     public AiProvider Kind => AiProvider.HuggingFace;
     public bool IsConfigured => !string.IsNullOrWhiteSpace(_key);
+    public string DefaultModel => _model;
 
     public async Task<string> CompleteAsync(string system, string user, int maxTokens, string? model = null, CancellationToken ct = default)
     {

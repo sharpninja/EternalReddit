@@ -28,6 +28,9 @@ public interface IReplyGenerator
 
     /// <summary>Let the model pick one option (1-based) from a numbered menu; returns the chosen number.</summary>
     Task<int> ChooseAsync(IReadOnlyList<string> options, string instruction, AiProvider provider, string? modelId = null, CancellationToken ct = default);
+
+    /// <summary>The model a call with this provider + override would actually use (override, else the provider default).</summary>
+    string? ResolveModelId(AiProvider provider, string? overrideModel);
 }
 
 public sealed class ReplyGenerator : IReplyGenerator
@@ -74,6 +77,9 @@ public sealed class ReplyGenerator : IReplyGenerator
         var m = System.Text.RegularExpressions.Regex.Match(text ?? "", "\\d+");
         return m.Success && int.TryParse(m.Value, out var n) && n >= 1 ? n : 1;
     }
+
+    public string? ResolveModelId(AiProvider provider, string? overrideModel)
+        => overrideModel ?? (_providers.TryGetValue(provider, out var ai) ? ai.DefaultModel : null);
 
     private IAiProvider Resolve(AiProvider provider)
         => _providers.TryGetValue(provider, out var ai) ? ai

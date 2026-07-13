@@ -22,7 +22,9 @@
             }
             @if (Reply.Provider != AiProvider.Scripted && Reply.Provider != AiProvider.User)
             {
-                <span class="badge badge-@Reply.Provider.ToString().ToLowerInvariant()">@Reply.Provider</span>
+                <span class="badge badge-@Reply.Provider.ToString().ToLowerInvariant()" title="@(Reply.Model ?? "model unknown")">
+                    @Reply.Provider@(Reply.Model is null ? "" : $" · {Reply.Model}")
+                </span>
             }
             <span class="dim">· @Ago(Reply.CreatedUtc)@(Reply.IsBackground ? " · auto" : "")</span>
             @if (CanReply)

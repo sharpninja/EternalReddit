@@ -9,15 +9,17 @@ public sealed class FakeAiProvider : IAiProvider
 {
     private readonly string _response;
 
-    public FakeAiProvider(AiProvider kind, string response, bool configured = true)
+    public FakeAiProvider(AiProvider kind, string response, bool configured = true, string defaultModel = "fake-default")
     {
         Kind = kind;
         _response = response;
         IsConfigured = configured;
+        DefaultModel = defaultModel;
     }
 
     public AiProvider Kind { get; }
     public bool IsConfigured { get; }
+    public string DefaultModel { get; }
     public string? LastUser { get; private set; }
     public string? LastSystem { get; private set; }
     public string? LastModel { get; private set; }

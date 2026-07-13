@@ -66,6 +66,26 @@ public class CommunityThreadingTests
     }
 
     [Fact]
+    public async Task Reply_records_the_effective_model()
+    {
+        var fake = new FakeAiProvider(AiProvider.Claude, "ok"); // DefaultModel = "fake-default"
+        var svc = Build(new ReplyGenerator(new[] { fake }));
+
+        // Sub with a Claude override: the override is recorded on the reply.
+        var sub = await svc.CreateSystemPostAsync("composers", "Johann Sebastian Bach", "Counterpoint?", "Fugues?");
+        var overridden = sub!.Replies.First(r => r.Provider == AiProvider.Claude);
+        Assert.Equal("claude-haiku-4-5", overridden.Model);
+
+        // Open sub, no override: the provider's default model is recorded.
+        var open = await svc.CreateSystemPostAsync("allofhistory", "Plato", "Forms?", "Discuss.");
+        var defaulted = open!.Replies.First(r => r.Provider == AiProvider.Claude);
+        Assert.Equal("fake-default", defaulted.Model);
+
+        // The scripted Columbus gag carries no model.
+        Assert.Null(sub.Replies.First(r => r.Provider == AiProvider.Scripted).Model);
+    }
+
+    [Fact]
     public async Task Prompt_uses_the_community_name_not_a_hardcoded_sub()
     {
         var fake = new FakeAiProvider(AiProvider.Claude, "ok");
