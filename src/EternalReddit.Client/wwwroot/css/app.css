@@ -81,19 +81,31 @@ a { color: inherit; text-decoration: none; }
 /* ---- app shell: left nav + main column ---- */
 .page { display: flex; min-height: 100vh; }
 .main-col { flex: 1; min-width: 0; }
-/* Flyout panel toggled by the topbar hamburger: it opens below the sticky header
-   (--topbar-h is measured by a small script in index.html) and stays open until
-   toggled again. Only phones in portrait get auto-hide behavior (backdrop +
-   close on navigate). It stops above the gateway's pinned footer via
+/* Sidebar toggled by the topbar hamburger, always below the sticky header
+   (--topbar-h is measured by a small script in index.html). Default mode is a
+   DOCKED panel: when open it consumes layout width and the content narrows.
+   Phones in portrait get the auto-collapse flyout instead (overlay + backdrop +
+   close on navigate). Both modes stop above the gateway's pinned footer via
    --es-footer-h (0 on direct visits). */
 .sidenav {
+    display: none;
     background: var(--card); border-right: 1px solid var(--line);
-    position: fixed; left: 0; top: var(--topbar-h, 53px); bottom: var(--es-footer-h, 0rem);
-    z-index: 60; width: 235px; overflow-y: auto;
-    transform: translateX(-105%); transition: transform 0.18s ease;
-    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.18);
+    flex: 0 0 235px; align-self: flex-start;
+    position: sticky; top: var(--topbar-h, 53px);
+    height: calc(100vh - var(--topbar-h, 53px) - var(--es-footer-h, 0rem));
+    overflow-y: auto;
 }
-.sidenav.open { transform: none; }
+.sidenav.open { display: block; }
+@media (max-width: 640px) and (orientation: portrait) {
+    .sidenav {
+        display: block;
+        position: fixed; left: 0; top: var(--topbar-h, 53px); bottom: var(--es-footer-h, 0rem);
+        height: auto; z-index: 60; width: 235px;
+        transform: translateX(-105%); transition: transform 0.18s ease;
+        box-shadow: 2px 0 12px rgba(0, 0, 0, 0.18);
+    }
+    .sidenav.open { transform: none; }
+}
 .sidenav-inner { display: flex; flex-direction: column; min-height: 100%; }
 .sidenav-section { padding: 12px 0; flex: 1; }
 .sidenav-head {
