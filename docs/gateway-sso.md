@@ -52,6 +52,16 @@ deploy process already does this).
 - The gateway's admin surface (`/admin`, `/_gateway/*`) is restricted to the owner's
   Google account (`Authorization__AdminEmail`).
 
+## Pinned estate footer
+
+The gateway injects a pinned footer into every proxied HTML page. A site opts in
+by placing the marker comment `<!--ETERNALSOCIAL-FOOTER-->` in its host page
+template (Blazor `index.html` or `App.razor`), just before `</body>`. On the way
+out the gateway replaces the marker with the footer markup (fixed bottom bar
+linking the enabled networks). Pages without the marker, non-HTML responses, and
+compressed bodies pass through untouched; reached directly (no gateway), the
+marker is an invisible HTML comment.
+
 ## Deployment triggers
 
 Each repo deploys independently: an Octopus Git trigger on each project polls
