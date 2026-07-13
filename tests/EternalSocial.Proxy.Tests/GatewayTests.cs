@@ -147,11 +147,12 @@ public class GatewayEndpointTests : IClassFixture<WebApplicationFactory<Program>
     }
 
     [Fact]
-    public async Task Unlaunched_prefix_serves_coming_soon()
+    public async Task Configured_prefix_routes_to_its_upstream()
     {
+        // All three sites are live in the seed now; with no upstream reachable in the
+        // test host, YARP answers 502 - proving the route exists and proxies.
         var res = await Client().GetAsync("/x/anything");
-        res.EnsureSuccessStatusCode();
-        Assert.Contains("hasn't launched", await res.Content.ReadAsStringAsync());
+        Assert.Equal(HttpStatusCode.BadGateway, res.StatusCode);
     }
 
     [Fact]
