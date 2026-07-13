@@ -27,16 +27,23 @@ function TeardownContainer($name) {
 }
 
 function Resolve-Source($repoUrl, $workLeaf) {
-    # Git-sourced steps materialize the repo in the working directory; otherwise clone.
-    # git output is routed to the host stream so it can never pollute the return value.
+    # Git-sourced steps extract the repo one level ABOVE this script's folder and run
+    # the script with CWD = the script's folder, so probe $PSScriptRoot's parent first.
+    $root = Split-Path -Parent $PSScriptRoot
+    if ($root -and (Test-Path (Join-Path $root 'Dockerfile'))) { return $root }
     if (Test-Path (Join-Path $PWD 'Dockerfile')) { return "$PWD" }
+    # Ad-hoc fallback: clone/refresh a working copy. git writes progress to stderr;
+    # cmd /c merges the streams outside PowerShell so EAP=Stop cannot treat it as fatal.
     $work = Join-Path $env:ProgramData $workLeaf
     New-Item -ItemType Directory -Force (Split-Path $work) | Out-Null
     if (Test-Path (Join-Path $work '.git')) {
-        git -C $work fetch --all --prune 2>&1 | Write-Host
-        git -C $work reset --hard origin/main 2>&1 | Write-Host
+        cmd /c "git -C ""$work"" fetch --all --prune 2>&1" | Write-Host
+        if ($LASTEXITCODE -ne 0) { throw "git fetch failed with exit code $LASTEXITCODE" }
+        cmd /c "git -C ""$work"" reset --hard origin/main 2>&1" | Write-Host
+        if ($LASTEXITCODE -ne 0) { throw "git reset failed with exit code $LASTEXITCODE" }
     } else {
-        git clone --branch main --depth 1 $repoUrl $work 2>&1 | Write-Host
+        cmd /c "git clone --branch main --depth 1 $repoUrl ""$work"" 2>&1" | Write-Host
+        if ($LASTEXITCODE -ne 0) { throw "git clone failed with exit code $LASTEXITCODE" }
     }
     return $work
 }
