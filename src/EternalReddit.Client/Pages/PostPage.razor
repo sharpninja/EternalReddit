@@ -112,17 +112,30 @@
     private string _commentStatus = "";
     private HubConnection? _hub;
 
-    protected override async Task OnParametersSetAsync() => await LoadPost();
+    protected override async Task OnParametersSetAsync()
+    {
+        await EnsureMe();
+        await LoadPost();
+    }
+
+    // Auth state is re-checked until it loads: a single failed /api/me (e.g. hitting
+    // the brief window of a redeploy) must not hide the composer for the whole session.
+    private async Task EnsureMe()
+    {
+        if (_me is not null) return;
+        try { _me = await Api.GetMeAsync(); } catch { /* try again on the next load */ }
+    }
 
     protected override async Task OnInitializedAsync()
     {
-        try { _me = await Api.GetMeAsync(); } catch { /* composer stays hidden */ }
+        await EnsureMe();
         _hub = new HubConnectionBuilder()
             .WithUrl(Nav.ToAbsoluteUri("hubs/feed"))
             .WithAutomaticReconnect()
             .Build();
         _hub.On("FeedChanged", async () =>
         {
+            await EnsureMe();
             await LoadPost();
             await InvokeAsync(StateHasChanged);
         });
