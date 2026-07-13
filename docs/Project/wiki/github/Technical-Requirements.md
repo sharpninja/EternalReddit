@@ -17,7 +17,7 @@ Scope: layer-1+
 ## TR-CORE-AUTH-001
 
 **Site-side gateway authentication contract** — GatewayAuthHandler (scheme Gateway) builds the request principal from X-Auth-UserId/Name/Email only when the X-Gateway-Key header matches the site's GATEWAY_KEY config; otherwise the request stays anonymous. Login/logout links point at the gateway root (root-absolute, outside PATH_BASE); the site absorbs its prefix with UsePathBase and a rewritten base href. The site never runs its own OAuth in gateway mode.
-**Covered by:** FR: FR-CORE-004, FR-CORE-019; TEST: TEST-CORE-001
+**Covered by:** FR: FR-CORE-004, FR-CORE-019, FR-UI-005; TEST: TEST-CORE-001
 **Status:** completed
 Scope: layer-1+
 

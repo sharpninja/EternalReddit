@@ -32,6 +32,7 @@ Traceability policy: see `Requirements-Traceability-Policy.md`.
 | FR-UI-002 | Tracked | Functional-Requirements.md |
 | FR-UI-003 | Tracked | Functional-Requirements.md |
 | FR-UI-004 | Tracked | Functional-Requirements.md |
+| FR-UI-005 | Tracked | Functional-Requirements.md |
 | TR-AI-GEN-001 | Tracked | Technical-Requirements.md |
 | TR-AI-SEED-001 | Tracked | Technical-Requirements.md |
 | TR-CORE-AUTH-001 | Tracked | Technical-Requirements.md |

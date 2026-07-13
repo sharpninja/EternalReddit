@@ -140,3 +140,8 @@ Scope: layer-1+
 Sub details and figure details are separate admin pages (navigated from the lists), not inline editors on the list views.
 Scope: layer-1+
 
+## FR-UI-005 Carries the estate footer marker
+
+The host page template (src/EternalReddit.Client/wwwroot/index.html) carries the <!--ETERNALSOCIAL-FOOTER--> marker just before </body> so the gateway can inject the pinned estate footer; direct visits see only an invisible HTML comment.
+Scope: layer-1+
+
