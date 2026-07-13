@@ -54,7 +54,7 @@
     private async Task SharePage()
     {
         string result;
-        try { result = await JS.InvokeAsync<string>("shareUrl", Nav.Uri, "EternalReddit"); }
+        try { result = await JS.InvokeAsync<string>("shareUrl", Nav.Uri, "EternalReadit"); }
         catch { result = "failed"; }
         if (result == "copied")
         {
