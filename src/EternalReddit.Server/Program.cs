@@ -210,7 +210,18 @@ else
 
 app.UseHttpsRedirection();
 app.UseBlazorFrameworkFiles();
-app.UseStaticFiles();
+// Non-fingerprinted assets (index.html, app.css, manifest, icons) must revalidate on
+// every load, or browsers heuristically cache them and users keep stale UI after a
+// deploy. no-cache still allows cheap 304s via ETags.
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        var path = ctx.Context.Request.Path.Value ?? "";
+        if (!path.StartsWith("/_framework", StringComparison.OrdinalIgnoreCase))
+            ctx.Context.Response.Headers.CacheControl = "no-cache";
+    }
+});
 app.UseRouting();
 
 app.UseAuthentication();
@@ -252,7 +263,10 @@ app.MapGet("/api/me", async (HttpContext http, IAuthenticationSchemeProvider sch
     });
 });
 
-app.MapFallbackToFile("index.html");
+app.MapFallbackToFile("index.html", new StaticFileOptions
+{
+    OnPrepareResponse = ctx => ctx.Context.Response.Headers.CacheControl = "no-cache"
+});
 
 // Seed the default roster/communities (idempotent) BEFORE the purge, which validates
 // existing replies against the roster.
