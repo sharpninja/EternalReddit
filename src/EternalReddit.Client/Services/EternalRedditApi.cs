@@ -121,6 +121,9 @@ public sealed class EternalRedditApi
     public async Task<List<ModerationLog>> AdminGetModerationLogAsync(int count = 100)
         => await _http.GetFromJsonAsync<List<ModerationLog>>($"api/admin/moderation-log?count={count}") ?? new();
 
+    public async Task<List<ProviderModels>> AdminGetModelsAsync()
+        => await _http.GetFromJsonAsync<List<ProviderModels>>("api/admin/models") ?? new();
+
     public Task<HttpResponseMessage> AdminRestoreAsync(string exportJson)
         => _http.PostAsync("api/admin/restore", new StringContent(exportJson, System.Text.Encoding.UTF8, "application/json"));
 
@@ -139,6 +142,9 @@ public sealed class EternalRedditApi
 /// <summary>Admin dashboard stats (mirrors /api/admin/stats).</summary>
 public sealed record AdminStats(int Posts, int Comments, int HumanComments, int AiComments, int BannedUsers,
     int Figures, int Communities, AiProvider[] Providers, AppSettings Settings);
+
+/// <summary>The models currently available from one configured provider (mirrors /api/admin/models).</summary>
+public sealed record ProviderModels(AiProvider Provider, List<string> Models, string DefaultModel);
 
 /// <summary>Current auth state plus the OAuth providers the server has configured.</summary>
 public sealed record MeInfo(bool Authenticated, string? Name, string[] Providers, bool IsAdmin);

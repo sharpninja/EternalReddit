@@ -17,4 +17,7 @@ public interface IAiProvider
     string DefaultModel { get; }
 
     Task<string> CompleteAsync(string system, string user, int maxTokens, string? model = null, CancellationToken ct = default);
+
+    /// <summary>The models currently available from this provider (best effort; at least the default).</summary>
+    Task<IReadOnlyList<string>> ListModelsAsync(CancellationToken ct = default);
 }

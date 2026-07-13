@@ -53,6 +53,7 @@ public class AdminEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
     [InlineData("GET", "/api/admin/settings")]
     [InlineData("GET", "/api/admin/users/banned")]
     [InlineData("GET", "/api/admin/moderation-log")]
+    [InlineData("GET", "/api/admin/models")]
     public async Task Admin_routes_are_forbidden_for_non_admins(string method, string url)
     {
         var res = await NonAdmin().SendAsync(new HttpRequestMessage(new HttpMethod(method), url));
@@ -149,6 +150,15 @@ public class AdminEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.NotNull(stats);
         Assert.True(stats!.Figures >= 46);
         Assert.True(stats.Communities >= 8);
+    }
+
+    [Fact]
+    public async Task Models_endpoint_returns_ok_for_admin()
+    {
+        // No AI providers configured in tests: an empty list, not an error.
+        var res = await Admin().GetAsync("/api/admin/models");
+        res.EnsureSuccessStatusCode();
+        Assert.Equal("[]", (await res.Content.ReadAsStringAsync()).Trim());
     }
 
     [Fact]

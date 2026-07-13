@@ -45,6 +45,26 @@ public sealed class ClaudeProvider : IAiProvider
                 return block.GetProperty("text").GetString() ?? "";
         return "";
     }
+
+    public async Task<IReadOnlyList<string>> ListModelsAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            var http = _factory.CreateClient();
+            using var req = new HttpRequestMessage(HttpMethod.Get, "https://api.anthropic.com/v1/models?limit=100");
+            req.Headers.Add("x-api-key", _key);
+            req.Headers.Add("anthropic-version", "2023-06-01");
+            using var res = await http.SendAsync(req, ct);
+            res.EnsureSuccessStatusCode();
+            using var doc = JsonDocument.Parse(await res.Content.ReadAsStringAsync(ct));
+            return doc.RootElement.GetProperty("data").EnumerateArray()
+                .Select(m => m.GetProperty("id").GetString() ?? "")
+                .Where(id => id.Length > 0)
+                .OrderBy(id => id)
+                .ToList();
+        }
+        catch { return new[] { _model }; }
+    }
 }
 
 /// <summary>Shared implementation for OpenAI-compatible chat/completions APIs.</summary>
@@ -87,6 +107,25 @@ public abstract class OpenAiCompatibleProvider : IAiProvider
         res.EnsureSuccessStatusCode();
         using var doc = JsonDocument.Parse(await res.Content.ReadAsStringAsync(ct));
         return doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString() ?? "";
+    }
+
+    public async Task<IReadOnlyList<string>> ListModelsAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            var http = _factory.CreateClient();
+            using var req = new HttpRequestMessage(HttpMethod.Get, _endpoint.Replace("/chat/completions", "/models"));
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _key);
+            using var res = await http.SendAsync(req, ct);
+            res.EnsureSuccessStatusCode();
+            using var doc = JsonDocument.Parse(await res.Content.ReadAsStringAsync(ct));
+            return doc.RootElement.GetProperty("data").EnumerateArray()
+                .Select(m => m.GetProperty("id").GetString() ?? "")
+                .Where(id => id.Length > 0)
+                .OrderBy(id => id)
+                .ToList();
+        }
+        catch { return new[] { _model }; }
     }
 }
 
@@ -144,4 +183,8 @@ public sealed class HuggingFaceProvider : IAiProvider
             return doc.RootElement[0].GetProperty("generated_text").GetString() ?? "";
         return "";
     }
+
+    // The HF hub is effectively unbounded; offer the configured default only.
+    public Task<IReadOnlyList<string>> ListModelsAsync(CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<string>>(new[] { _model });
 }

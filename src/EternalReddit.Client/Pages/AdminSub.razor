@@ -36,14 +36,21 @@
                 }
             </div>
 
-            <div class="side-sub dim">Model per agent in this sub (blank = provider default)</div>
+            <div class="side-sub dim">Model per agent in this sub (pick or type; blank = provider default)</div>
             @foreach (var p in _providers)
             {
                 <div class="admin-model-row">
                     <span class="admin-name">@p</span>
-                    <input class="title-input" placeholder="model id"
+                    <input class="title-input" list="@($"models-{p}")"
+                           placeholder="@(DefaultFor(p) is { Length: > 0 } d ? $"default: {d}" : "model id")"
                            value="@(_sub.ResolveModel(p) ?? "")"
                            @onchange="e => SetModel(p, e.Value?.ToString())" />
+                    <datalist id="@($"models-{p}")">
+                        @foreach (var m in ModelsFor(p))
+                        {
+                            <option value="@m" />
+                        }
+                    </datalist>
                 </div>
             }
 
@@ -69,6 +76,7 @@
     private MeInfo? _me;
     private Community _sub = new();
     private List<PeerGroup> _groups = new();
+    private List<ProviderModels> _models = new();
     private bool _loading = true;
     private bool _isNew;
     private bool _busy, _confirmDelete;
@@ -88,6 +96,8 @@
                 _sub = existing ?? new Community { Slug = Slug.Trim().ToLowerInvariant(), Enabled = true };
             }
             catch { _status = "Couldn't load the sub."; }
+            try { _models = await Api.AdminGetModelsAsync(); }
+            catch { /* combo falls back to free typing */ }
         }
         _loading = false;
     }
@@ -98,6 +108,12 @@
         if (on && !_sub.GroupIds.Contains(slug)) _sub.GroupIds.Add(slug);
         if (!on) _sub.GroupIds.Remove(slug);
     }
+
+    private IReadOnlyList<string> ModelsFor(AiProvider p)
+        => _models.FirstOrDefault(m => m.Provider == p)?.Models ?? (IReadOnlyList<string>)Array.Empty<string>();
+
+    private string? DefaultFor(AiProvider p)
+        => _models.FirstOrDefault(m => m.Provider == p)?.DefaultModel;
 
     private void SetModel(AiProvider p, string? modelId)
     {

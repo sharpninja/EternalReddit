@@ -1,6 +1,7 @@
 using EternalReddit.Server.Auth;
 using EternalReddit.Server.Data;
 using EternalReddit.Server.Services;
+using EternalReddit.Server.Services.Ai;
 using EternalReddit.Shared.Models;
 
 namespace EternalReddit.Server.Endpoints;
@@ -13,6 +14,11 @@ namespace EternalReddit.Server.Endpoints;
 public static class AdminEndpoints
 {
     public sealed record BanBody(string UserId, string? Name, string? Reason);
+
+    public sealed record ProviderModelsDto(AiProvider Provider, IReadOnlyList<string> Models, string DefaultModel);
+
+    // The provider model lists change rarely; cache the (network) lookups briefly.
+    private static (DateTime At, List<ProviderModelsDto> Payload)? _modelsCache;
 
     /// <summary>Versioned full snapshot of everything data-driven (export/restore).</summary>
     public sealed record ExportBundle(
@@ -117,6 +123,20 @@ public static class AdminEndpoints
         });
         admin.MapGet("/moderation-log", (IModerationLogStore log, int? count) =>
             Results.Ok(log.GetRecent(count is > 0 ? count.Value : 100)));
+
+        // --- Models currently available per configured provider (for the sub editor) ---
+        admin.MapGet("/models", async (IEnumerable<IAiProvider> providers, CancellationToken ct) =>
+        {
+            if (_modelsCache is { } cached && DateTime.UtcNow - cached.At < TimeSpan.FromMinutes(5))
+                return Results.Ok(cached.Payload);
+
+            var list = new List<ProviderModelsDto>();
+            foreach (var p in providers.Where(p => p.IsConfigured))
+                list.Add(new ProviderModelsDto(p.Kind, await p.ListModelsAsync(ct), p.DefaultModel));
+
+            _modelsCache = (DateTime.UtcNow, list);
+            return Results.Ok(list);
+        });
 
         // --- Data management: export / restore / clear feed ---
         admin.MapGet("/export", (IPostStore posts, ICommunityStore communities, IPeerGroupStore groups,

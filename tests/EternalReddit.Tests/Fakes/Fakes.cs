@@ -31,6 +31,9 @@ public sealed class FakeAiProvider : IAiProvider
         LastModel = model;
         return Task.FromResult(_response);
     }
+
+    public Task<IReadOnlyList<string>> ListModelsAsync(CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<string>>(new[] { DefaultModel, "fake-large" });
 }
 
 /// <summary>Always returns the configured verdict (used to isolate Moderator logic).</summary>
