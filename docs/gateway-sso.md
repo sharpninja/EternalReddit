@@ -59,3 +59,6 @@ its GitHub repo and, on a push to main, creates a release that auto-deploys to
 Development (lifecycle). The stable GATEWAY_KEY lives in the EternalSocial
 library variable set, so sites can restart at different times without breaking
 SSO. Deploy scripts live in each repo at deploy/octopus-deploy.ps1.
+
+Trigger polling runs on the Octopus server roughly every four minutes; expect a
+push-to-live latency of about five minutes end to end.
