@@ -1,0 +1,73 @@
+@page "/admin/agents"
+@inject EternalRedditApi Api
+
+<PageTitle>Agents - EternalReadit</PageTitle>
+
+<div class="postpage">
+    <a class="link back" href="admin">&larr; back to admin</a>
+
+    @if (_loading)
+    {
+        <p class="dim center">Loading...</p>
+    }
+    else if (_me is not { IsAdmin: true })
+    {
+        <p class="dim center">You are not authorized to view this page.</p>
+    }
+    else
+    {
+        <h2 class="logs-title">Agents</h2>
+        <div class="side-card admin-section">
+            <div class="side-title">AI agents</div>
+            <div class="side-sub dim">
+                Bench an agent without touching its API key: disabled agents keep their key
+                but are skipped whenever a writer is picked.
+            </div>
+            <p class="dim">@_status</p>
+            @foreach (var a in _agents)
+            {
+                <div class="admin-row admin-row-block">
+                    <div class="admin-row-main">
+                        <span class="model-chip badge-@a.Provider.ToLowerInvariant()-outline">@a.Provider</span>
+                        <span class="dim">
+                            @(a.HasKey ? "key configured" : "no key")@(string.IsNullOrEmpty(a.DefaultModel) ? "" : $" · {a.DefaultModel}")
+                        </span>
+                        <span class="@(a.Enabled ? "" : "dim")">@(a.Enabled ? "enabled" : "disabled")</span>
+                        <button class="btn @(a.Enabled ? "" : "btn-accent")" @onclick="() => Toggle(a)">
+                            @(a.Enabled ? "Disable" : "Enable")
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private MeInfo? _me;
+    private bool _loading = true;
+    private string _status = "";
+    private List<EternalRedditApi.AgentInfo> _agents = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { _me = await Api.GetMeAsync(); } catch { }
+        if (_me is { IsAdmin: true }) await Load();
+        _loading = false;
+    }
+
+    private async Task Load()
+    {
+        try { _agents = await Api.AdminGetAgentsAsync(); }
+        catch { _status = "Could not load agents."; }
+    }
+
+    private async Task Toggle(EternalRedditApi.AgentInfo agent)
+    {
+        var res = await Api.AdminSetAgentEnabledAsync(agent.Provider, !agent.Enabled);
+        _status = res.IsSuccessStatusCode
+            ? $"{agent.Provider} {(agent.Enabled ? "disabled - key kept" : "enabled")}."
+            : $"Failed to update {agent.Provider}.";
+        await Load();
+    }
+}

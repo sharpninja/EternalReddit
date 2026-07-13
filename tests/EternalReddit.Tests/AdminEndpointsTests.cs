@@ -54,10 +54,52 @@ public class AdminEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
     [InlineData("GET", "/api/admin/users/banned")]
     [InlineData("GET", "/api/admin/moderation-log")]
     [InlineData("GET", "/api/admin/models")]
+    [InlineData("GET", "/api/admin/agents")]
     public async Task Admin_routes_are_forbidden_for_non_admins(string method, string url)
     {
         var res = await NonAdmin().SendAsync(new HttpRequestMessage(new HttpMethod(method), url));
         Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);
+    }
+
+    private sealed record AgentRow(string Provider, bool HasKey, bool Enabled, string? DefaultModel);
+
+    [Fact]
+    public async Task Agents_list_covers_real_providers_only()
+    {
+        var rows = await Admin().GetFromJsonAsync<List<AgentRow>>("/api/admin/agents");
+
+        Assert.Equal(new[] { "Claude", "Grok", "HuggingFace", "OpenAI" },
+            rows!.Select(r => r.Provider).OrderBy(p => p, StringComparer.Ordinal).ToArray());
+        Assert.All(rows!, r => Assert.True(r.Enabled));          // nothing disabled by default
+        Assert.All(rows!, r => Assert.False(r.HasKey));          // no keys in the test host
+    }
+
+    [Fact]
+    public async Task Disabling_an_agent_persists_without_touching_its_key()
+    {
+        var admin = Admin();
+
+        (await admin.PutAsJsonAsync("/api/admin/agents/Grok", new { enabled = false })).EnsureSuccessStatusCode();
+        var rows = await admin.GetFromJsonAsync<List<AgentRow>>("/api/admin/agents");
+        Assert.False(rows!.Single(r => r.Provider == "Grok").Enabled);
+
+        // The toggle lives in settings; re-enabling round-trips clean.
+        var settings = await admin.GetFromJsonAsync<AppSettings>("/api/admin/settings");
+        Assert.Contains(AiProvider.Grok, settings!.DisabledProviders);
+
+        (await admin.PutAsJsonAsync("/api/admin/agents/Grok", new { enabled = true })).EnsureSuccessStatusCode();
+        rows = await admin.GetFromJsonAsync<List<AgentRow>>("/api/admin/agents");
+        Assert.True(rows!.Single(r => r.Provider == "Grok").Enabled);
+    }
+
+    [Theory]
+    [InlineData("Scripted")]
+    [InlineData("User")]
+    [InlineData("NotAProvider")]
+    public async Task Toggling_a_non_agent_is_rejected(string provider)
+    {
+        var res = await Admin().PutAsJsonAsync($"/api/admin/agents/{provider}", new { enabled = false });
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
     }
 
     [Fact]

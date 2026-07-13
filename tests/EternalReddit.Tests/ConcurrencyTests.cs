@@ -31,7 +31,7 @@ public class ConcurrencyTests
         var svc = new PostService(store, new InMemoryUserStore(), new InMemoryModerationLogStore(),
             new SlidingWindowRateLimiter(new FakeClock(), 100, TimeSpan.FromMinutes(1)),
             new Moderator(new StubClassifier(ModerationVerdict.Clean)),
-            gen, new NullFeedNotifier(), communities, new RosterService(figures), NullLogger<PostService>.Instance);
+            gen, new NullFeedNotifier(), communities, new RosterService(figures), new InMemorySettingsStore(), NullLogger<PostService>.Instance);
         return (svc, store, ctx, path);
     }
 

@@ -17,6 +17,14 @@ public static class AdminEndpoints
 
     public sealed record ProviderModelsDto(AiProvider Provider, IReadOnlyList<string> Models, string DefaultModel);
 
+    /// <summary>One AI agent row: key presence and the admin's enable toggle (never the key itself).</summary>
+    public sealed record AgentDto(string Provider, bool HasKey, bool Enabled, string? DefaultModel);
+    public sealed record AgentToggleBody(bool Enabled);
+
+    /// <summary>The providers that are actual AI agents (Scripted/User are content markers).</summary>
+    private static readonly AiProvider[] RealAgents =
+        { AiProvider.Claude, AiProvider.OpenAI, AiProvider.Grok, AiProvider.HuggingFace };
+
     // The provider model lists change rarely; cache the (network) lookups briefly.
     private static (DateTime At, List<ProviderModelsDto> Payload)? _modelsCache;
 
@@ -100,6 +108,28 @@ public static class AdminEndpoints
         {
             store.Save(body);
             return Results.Ok(body);
+        });
+
+        // --- Agents: enable/disable a provider without touching its API key ---
+        admin.MapGet("/agents", (ISettingsStore store, Services.Ai.IReplyGenerator gen) =>
+        {
+            var settings = store.Get();
+            var rows = RealAgents
+                .Select(p => new AgentDto(p.ToString(), gen.Available.Contains(p),
+                    !settings.DisabledProviders.Contains(p), gen.ResolveModelId(p, null)))
+                .ToList();
+            return Results.Ok(rows);
+        });
+        admin.MapPut("/agents/{provider}", (ISettingsStore store, string provider, AgentToggleBody body) =>
+        {
+            if (!Enum.TryParse<AiProvider>(provider, ignoreCase: true, out var kind) || !RealAgents.Contains(kind))
+                return Results.BadRequest("Unknown agent. Valid agents: " + string.Join(", ", RealAgents));
+
+            var settings = store.Get();
+            settings.DisabledProviders.Remove(kind);
+            if (!body.Enabled) settings.DisabledProviders.Add(kind);
+            store.Save(settings);
+            return Results.Ok(new AgentDto(kind.ToString(), false, body.Enabled, null));
         });
 
         // --- Stats + moderation log ---

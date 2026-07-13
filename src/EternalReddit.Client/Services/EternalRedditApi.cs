@@ -112,6 +112,13 @@ public sealed class EternalRedditApi
     public Task<HttpResponseMessage> AdminSaveSettingsAsync(AppSettings s)
         => _http.PutAsJsonAsync("api/admin/settings", s);
 
+    /// <summary>One AI agent: key presence and enable toggle; the key itself never leaves the server.</summary>
+    public sealed record AgentInfo(string Provider, bool HasKey, bool Enabled, string? DefaultModel);
+    public async Task<List<AgentInfo>> AdminGetAgentsAsync()
+        => await _http.GetFromJsonAsync<List<AgentInfo>>("api/admin/agents") ?? new();
+    public Task<HttpResponseMessage> AdminSetAgentEnabledAsync(string provider, bool enabled)
+        => _http.PutAsJsonAsync($"api/admin/agents/{provider}", new { enabled });
+
     public async Task<AdminStats?> AdminGetStatsAsync()
     {
         try { return await _http.GetFromJsonAsync<AdminStats>("api/admin/stats"); }

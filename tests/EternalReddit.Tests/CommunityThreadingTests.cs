@@ -27,7 +27,7 @@ public class CommunityThreadingTests
         var limiter = new SlidingWindowRateLimiter(new FakeClock(), 100, TimeSpan.FromMinutes(1));
         var moderator = new Moderator(new StubClassifier(ModerationVerdict.Clean));
         var roster = new RosterService(_figures);
-        return new PostService(_posts, _users, _logs, limiter, moderator, gen, new NullFeedNotifier(), _communities, roster, NullLogger<PostService>.Instance);
+        return new PostService(_posts, _users, _logs, limiter, moderator, gen, new NullFeedNotifier(), _communities, roster, new InMemorySettingsStore(), NullLogger<PostService>.Instance);
     }
 
     [Fact]

@@ -26,7 +26,7 @@ public class AdminServiceTests
             new SlidingWindowRateLimiter(new FakeClock(), 100, TimeSpan.FromMinutes(1)),
             new Moderator(new StubClassifier(ModerationVerdict.Clean)),
             new ReplyGenerator(Array.Empty<IAiProvider>()),
-            new NullFeedNotifier(), communities, new RosterService(figures), NullLogger<PostService>.Instance);
+            new NullFeedNotifier(), communities, new RosterService(figures), new InMemorySettingsStore(), NullLogger<PostService>.Instance);
     }
 
     private async Task<Post> NewPost(PostService svc)

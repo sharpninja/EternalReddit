@@ -75,7 +75,8 @@ public sealed class AutoReplyBackgroundService : BackgroundService
 
     private async Task TickAsync(CancellationToken ct)
     {
-        if (!AiFeedControl.ShouldAutoReply(_settings.Get())) return; // admin-paused
+        var settings = _settings.Get();
+        if (!AiFeedControl.ShouldAutoReply(settings)) return; // admin-paused
 
         var now = DateTime.UtcNow;
         var since = now - Window;
@@ -94,7 +95,10 @@ public sealed class AutoReplyBackgroundService : BackgroundService
             .ToList();
         if (candidates.Count == 0) return;
 
-        var provider = _rotation!.Next();
+        // Admin-benched agents are skipped without touching their keys.
+        var picked = AgentControl.NextEnabled(_rotation!, _generator.Available.Count, settings);
+        if (picked is null) return;
+        var provider = picked.Value;
 
         // Let the AI decide which conversation to join.
         var chosen = candidates[0];

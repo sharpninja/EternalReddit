@@ -55,6 +55,7 @@ public class UserPostCommunityTests
             new EternalReddit.Server.Services.Ai.ReplyGenerator(Array.Empty<EternalReddit.Server.Services.Ai.IAiProvider>()),
             new EternalReddit.Server.Services.NullFeedNotifier(), communities,
             new EternalReddit.Server.Services.Ai.RosterService(figures),
+            new Fakes.InMemorySettingsStore(),
             Microsoft.Extensions.Logging.Abstractions.NullLogger<EternalReddit.Server.Services.PostService>.Instance);
 
         var inSub = await svc.CreateAsync(new EternalReddit.Server.Services.CreatePostRequest(null, "hi", "u1", "Ada", "1.1.1.1", "generals"));

@@ -80,6 +80,7 @@ public sealed class PostService : IPostService
     private readonly IFeedNotifier _notifier;
     private readonly ICommunityStore _communities;
     private readonly IRosterService _roster;
+    private readonly ISettingsStore _settings;
     private readonly ILogger<PostService> _logger;
 
     public PostService(
@@ -92,6 +93,7 @@ public sealed class PostService : IPostService
         IFeedNotifier notifier,
         ICommunityStore communities,
         IRosterService roster,
+        ISettingsStore settings,
         ILogger<PostService> logger)
     {
         _posts = posts;
@@ -103,6 +105,7 @@ public sealed class PostService : IPostService
         _notifier = notifier;
         _communities = communities;
         _roster = roster;
+        _settings = settings;
         _logger = logger;
     }
 
@@ -399,9 +402,11 @@ public sealed class PostService : IPostService
 
     private async Task GenerateReplyThreadAsync(Post post, CancellationToken ct)
     {
-        if (_generator.Available.Count == 0) return;
+        // Admin-benched agents keep their keys but sit out the thread.
+        var enabled = AgentControl.Enabled(_generator.Available, _settings.Get());
+        if (enabled.Count == 0) return;
 
-        var rotation = new RoundRobinSelector(_generator.Available);
+        var rotation = new RoundRobinSelector(enabled);
         for (var i = 0; i < ReplyCount; i++)
             await GenerateReplyInto(post, rotation.Next(), background: false, ct);
     }

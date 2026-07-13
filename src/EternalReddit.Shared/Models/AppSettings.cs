@@ -8,4 +8,10 @@ public sealed class AppSettings
 
     /// <summary>When true, the background auto-reply service is idle.</summary>
     public bool AutoRepliesPaused { get; set; }
+
+    /// <summary>
+    /// Agents the admin has benched. Their API keys stay configured; the providers are
+    /// simply skipped when picking who writes. Empty = every configured agent plays.
+    /// </summary>
+    public List<AiProvider> DisabledProviders { get; set; } = new();
 }

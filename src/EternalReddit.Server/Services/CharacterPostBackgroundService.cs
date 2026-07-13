@@ -69,7 +69,8 @@ public sealed class CharacterPostBackgroundService : BackgroundService
 
     private async Task TickAsync(CancellationToken ct)
     {
-        if (!AiFeedControl.ShouldAutoPost(_settings.Get())) return; // admin-paused
+        var settings = _settings.Get();
+        if (!AiFeedControl.ShouldAutoPost(settings)) return; // admin-paused
 
         var latest = _posts.GetRecent(1).FirstOrDefault();
         if (latest is not null && DateTime.UtcNow - latest.CreatedUtc < Quiet) return;
@@ -77,7 +78,10 @@ public sealed class CharacterPostBackgroundService : BackgroundService
         var community = PickCommunity();
         if (community is null) return;
 
-        var provider = _rotation!.Next();
+        // Admin-benched agents are skipped without touching their keys.
+        var picked = AgentControl.NextEnabled(_rotation!, _generator.Available.Count, settings);
+        if (picked is null) return;
+        var provider = picked.Value;
         var figure = _roster.Pick(community.GroupIds);
         if (string.IsNullOrEmpty(figure)) return;
         var persona = _roster.Persona(figure);

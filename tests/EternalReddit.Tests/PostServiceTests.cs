@@ -27,7 +27,7 @@ public class PostServiceTests
         var communities = new InMemoryCommunityStore();
         RosterSeed.EnsureSeeded(groups, figures, communities);
         var roster = new RosterService(figures);
-        return new PostService(_posts, _users, _logs, limiter, moderator, gen, new NullFeedNotifier(), communities, roster, NullLogger<PostService>.Instance);
+        return new PostService(_posts, _users, _logs, limiter, moderator, gen, new NullFeedNotifier(), communities, roster, new InMemorySettingsStore(), NullLogger<PostService>.Instance);
     }
 
     private static CreatePostRequest Req(string body, string ip = "1.1.1.1", string user = "google:abc")

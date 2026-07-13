@@ -30,7 +30,7 @@ public class DevBlogServiceTests
             new SlidingWindowRateLimiter(new FakeClock(), 100, TimeSpan.FromMinutes(1)),
             new Moderator(new StubClassifier(ModerationVerdict.Clean)),
             new ReplyGenerator(new[] { fake }), new NullFeedNotifier(), communities,
-            new RosterService(figures), NullLogger<PostService>.Instance);
+            new RosterService(figures), new InMemorySettingsStore(), NullLogger<PostService>.Instance);
 
         var result = await svc.CreateAsync(new CreatePostRequest("Release notes", "We shipped things.", "u1", "Payton", "1.1.1.1", "devblog"));
 
