@@ -15,7 +15,8 @@
                 {
                     <li class="poster">
                         <span class="poster-rank">@(entry.i + 1)</span>
-                        <span class="poster-figure" title="@entry.p.Comments comment@(entry.p.Comments == 1 ? "" : "s")">@entry.p.Figure</span>
+                        <a class="poster-figure" href="@($"u/{Uri.EscapeDataString(entry.p.Figure)}")"
+                           title="@entry.p.Comments comment@(entry.p.Comments == 1 ? "" : "s")">@entry.p.Figure</a>
                         <span class="poster-karma @(entry.p.Karma < 0 ? "neg" : "")">@entry.p.Karma</span>
                     </li>
                 }

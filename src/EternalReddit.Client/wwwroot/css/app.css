@@ -186,7 +186,8 @@ form.nav-auth .login { width: 100%; }
 }
 .poster:first-child { border-top: none; }
 .poster-rank { color: var(--dim); font-weight: 700; width: 1.4em; text-align: right; }
-.poster-figure { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.poster-figure { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: var(--ink); }
+a.poster-figure:hover { color: var(--accent); text-decoration: underline; }
 .poster-karma { font-weight: 800; color: var(--up); }
 .poster-karma.neg { color: var(--down); }
 
