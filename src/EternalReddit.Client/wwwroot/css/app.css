@@ -294,7 +294,8 @@ table.logs tr:first-child td { border-top: none; }
 .pactions .expand { font-weight: 700; }
 
 /* ---- post detail page ---- */
-.postpage { max-width: 680px; margin: 0 auto; }
+/* Post pages (and the admin/profile pages sharing the class) stretch like the feed. */
+.postpage { max-width: none; margin: 0; }
 .postpage .back { display: inline-block; margin-bottom: 12px; font-size: 0.85rem; }
 
 /* ---- sort tabs (feed + comments) ---- */
