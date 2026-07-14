@@ -165,12 +165,13 @@ form.nav-auth .login { width: 100%; }
 .pwa-install { background: none; color: var(--accent); border: 1px solid var(--accent); }
 .pwa-install:hover { background: var(--accent); color: #fff; }
 .inline-form { display: inline; }
-.content { max-width: 1040px; margin: 18px auto; padding: 0 12px; }
+/* Content fills the viewport width; the Top Posters sidebar rides the right edge. */
+.content { max-width: none; margin: 18px 0; padding: 0 0 0 16px; }
 
 /* ---- two-column layout: feed + Top Posters sidebar ---- */
 .layout { display: flex; gap: 20px; align-items: flex-start; }
-.feed-col { flex: 1 1 auto; min-width: 0; max-width: 680px; }
-.sidebar { flex: 0 0 300px; position: sticky; top: 64px; }
+.feed-col { flex: 1 1 auto; min-width: 0; }
+.sidebar { flex: 0 0 300px; position: sticky; top: calc(var(--topbar-h, 53px) + 12px); }
 .side-card {
     background: var(--card); border: 1px solid var(--line); border-radius: 8px;
     padding: 12px 14px;
